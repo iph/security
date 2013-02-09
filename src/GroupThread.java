@@ -110,23 +110,157 @@ public class GroupThread extends Thread
 				}
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
 				{
-				    /* TODO:  Write this handler */
+				    /* Create Group:
+						Any user can create a group
+						Owner of the group.
+				    */
+					// Make sure contents are correct
+					if(message.getObjContents().size() < 2){
+						response = new Envelope("FAIL");
+						output.writeObject(response);
+						return;
+					}
+					String groupname = (String)message.getObjContents().get(0);
+					UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+					String username = yourToken.getIssuer();
+
+					my_gs.userList.addGroup(username, groupname);
+					my_gs.userList.addOwnership(username, groupname);
+
+					my_gs.groupList.addGroup(groupname);
+					my_gs.groupList.addOwner(groupname, username);
+
+					response = new Envelope("OK");
+					output.writeObject(response);
 				}
 				else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
 				{
-				    /* TODO:  Write this handler */
+				    /*
+						boolean deleteGroup(String groupname, UserToken token)
+						This method allows the owner of token to delete the specified group, provided that
+						they are the owner of that group. After deleting a group, no user should be a member
+						of that group.
+				    */
+
+					if(message.getObjContents().size() < 2){
+						response = new Envelope("FAIL");
+						output.writeObject(response);
+						return;
+					}
+
+					String groupname = (String)message.getObjContents().get(0);
+					UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+					String username = yourToken.getIssuer();
+
+					if(!my_gs.groupList.isOwner(groupname, username)){
+						response = new Envelope("FAIL");
+						output.writeObject(response);
+					}
+					else{
+						my_gs.userList.removeGroup(username, groupname);	
+
+						//Go through all the group members and remove them!
+						for(String user: my_gs.groupList.getMembers(groupname)){
+							my_gs.userList.removeGroup(user, groupname);
+						}
+						// @FIXME: Is there more than one user as an owner? If yes, fix this to remove all groups
+						my_gs.groupList.deleteGroup(groupname);
+						response = new Envelope("OK");
+						output.writeObject(response);
+
+					}
 				}
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
 				{
-				    /* TODO:  Write this handler */
+				    /*
+						List<String> listMembers(String group, UserToken token)
+						Provided that the owner of token is also the owner of group, this method will return
+						a list of all users that are currently members of group
+				    */
+					if(message.getObjContents().size() < 2){
+						response = new Envelope("FAIL");
+						output.writeObject(response);
+						return;
+					}
+
+					String groupname = (String)message.getObjContents().get(0);
+					UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+					String username = yourToken.getIssuer();
+
+					if(!my_gs.groupList.isOwner(groupname, username)){
+						response = new Envelope("FAIL");
+						output.writeObject(response);
+					}
+					else{
+						List<String> members = new ArrayList<String>(my_gs.groupList.getMembers(groupname));
+						response = new Envelope("OK");
+						response.addObject(members);
+						output.writeObject(response);
+
+					}
+
 				}
 				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
 				{
-				    /* TODO:  Write this handler */
+				    /*
+						boolean addUserToGroup(String user, String group, UserToken token)
+						This method enables the owner of token to add the user user to the group group.
+						This operation requires that the owner of token is also the owner of group.
+				    */
+					if(message.getObjContents().size() < 2){
+						response = new Envelope("FAIL");
+						output.writeObject(response);
+						return;
+					}
+
+					String groupname = (String)message.getObjContents().get(0);
+					UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+					String username = yourToken.getIssuer();
+
+					if(!my_gs.groupList.isOwner(groupname, username)){
+						response = new Envelope("FAIL");
+						output.writeObject(response);
+					}
+					else{
+						my_gs.userList.addGroup(username, groupname);
+						my_gs.groupList.addMember(groupname, username);
+
+						response = new Envelope("OK");
+						output.writeObject(response);
+					}
+
 				}
 				else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
 				{
-				    /* TODO:  Write this handler */
+				    /*
+						boolean deleteUserFromGroup(String user, String group, UserToken token)
+						This method enables the owner of token to remove the user user from the group
+						group. This operation requires that the owner of token is also the owner of group.
+				    */
+					if(message.getObjContents().size() < 3){
+						response = new Envelope("FAIL");
+						output.writeObject(response);
+						return;
+					}
+
+					String userToDelete = (String) message.getObjContents().get(0);
+					String groupname = (String)message.getObjContents().get(1);
+					UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
+					String username = yourToken.getIssuer();
+
+					if( userToDelete.equals(username) || !my_gs.groupList.isOwner(groupname, username)){
+						response = new Envelope("FAIL");
+						output.writeObject(response);
+					}
+					else{
+						my_gs.userList.removeGroup(userToDelete, groupname);
+						my_gs.groupList.removeMember(groupname, userToDelete);
+
+						response = new Envelope("OK");
+						output.writeObject(response);
+					}
+
+
 				}
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
 				{
@@ -268,4 +402,16 @@ public class GroupThread extends Thread
 		}
 	}
 	
+	private void deleteGroup(String groupname, UserToken token){
+		String username = token.getIssuer();
+		my_gs.userList.removeGroup(username, groupname);	
+
+		//Go through all the group members and remove them!
+		for(String user: my_gs.groupList.getMembers(groupname)){
+			my_gs.userList.removeGroup(user, groupname);
+		}
+		// @FIXME: Is there more than one user as an owner? If yes, fix this to remove all groups
+		my_gs.groupList.deleteGroup(groupname);
+
+	}
 }

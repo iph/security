@@ -3,12 +3,6 @@
  * On exit, the server saves the user list to file. 
  */
 
-/*
- * TODO: This file will need to be modified to save state related to
- *       groups that are created in the system
- *
- */
-
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.*;
@@ -19,6 +13,7 @@ public class GroupServer extends Server {
 
 	public static final int SERVER_PORT = 8765;
 	public UserList userList;
+	public GroupList groupList;
     
 	public GroupServer() {
 		super(SERVER_PORT, "ALPHA");
@@ -32,6 +27,7 @@ public class GroupServer extends Server {
 		// Overwrote server.start() because if no user file exists, initial admin account needs to be created
 		
 		String userFile = "UserList.bin";
+		String groupFile = "GroupList.bin";
 		Scanner console = new Scanner(System.in);
 		ObjectInputStream userStream;
 		ObjectInputStream groupStream;
@@ -59,6 +55,25 @@ public class GroupServer extends Server {
 			userList.addUser(username);
 			userList.addGroup(username, "ADMIN");
 			userList.addOwnership(username, "ADMIN");
+
+			groupList = new GroupList();
+			groupList.addGroup("ADMIN");
+			groupList.addOwner("ADMIN", username);
+
+			ObjectOutputStream outStream;
+			try
+			{
+				outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+				outStream.writeObject(groupList);
+				outStream.close();
+			}
+			catch(Exception e1)
+			{
+				System.err.println("Error: " + e.getMessage());
+				e.printStackTrace(System.err);
+			}
+
+
 		}
 		catch(IOException e)
 		{
@@ -68,6 +83,30 @@ public class GroupServer extends Server {
 		catch(ClassNotFoundException e)
 		{
 			System.out.println("Error reading from UserList file");
+			System.exit(-1);
+		}
+				//Open group file to get group list
+		try
+		{
+			FileInputStream fis = new FileInputStream(groupFile);
+			groupStream = new ObjectInputStream(fis);
+			groupList = (GroupList)groupStream.readObject();
+		}
+		catch(FileNotFoundException e)
+		{
+			//Don't need this, will be created if the userlist was not.
+			//Create a new list, add current user to the ADMIN group. They now own the ADMIN group.
+			System.out.println("Error in finding GroupList file. Delete the userlist to maintain stability!");
+			System.exit(-1);
+		}
+		catch(IOException e)
+		{
+			System.out.println("Error reading from GroupList file");
+			System.exit(-1);
+		}
+		catch(ClassNotFoundException e)
+		{
+			System.out.println("Error reading from GroupList file");
 			System.exit(-1);
 		}
 		
@@ -119,6 +158,9 @@ class ShutDownListener extends Thread
 		{
 			outStream = new ObjectOutputStream(new FileOutputStream("UserList.bin"));
 			outStream.writeObject(my_gs.userList);
+			outStream.close();
+			outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+			outStream.writeObject(my_gs.groupList);
 		}
 		catch(Exception e)
 		{
@@ -149,17 +191,20 @@ class AutoSave extends Thread
 				{
 					outStream = new ObjectOutputStream(new FileOutputStream("UserList.bin"));
 					outStream.writeObject(my_gs.userList);
+					outStream.close();
+					outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+					outStream.writeObject(my_gs.groupList);
 				}
 				catch(Exception e)
 				{
 					System.err.println("Error: " + e.getMessage());
 					e.printStackTrace(System.err);
 				}
-
+			}
 			catch(Exception e)
 			{
 				System.out.println("Autosave Interrupted");
 			}
-		}while(true);
+	    }while(true);
 	}
 }
