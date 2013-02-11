@@ -57,10 +57,12 @@ public class GroupThread extends Thread
 				{
 					if(message.getObjContents().size() < 2)
 					{
+						System.out.println("HERE_1");
 						response = new Envelope("FAIL");
 					}
 					else
 					{
+						System.out.println("HERE_2");
 						response = new Envelope("FAIL");
 						
 						if(message.getObjContents().get(0) != null)
@@ -70,6 +72,7 @@ public class GroupThread extends Thread
 								String username = (String)message.getObjContents().get(0); //Extract the username
 								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
 								
+								System.out.println("username: " + username);
 								if(createUser(username, yourToken))
 								{
 									response = new Envelope("OK"); //Success
@@ -122,7 +125,7 @@ public class GroupThread extends Thread
 					}
 					String groupname = (String)message.getObjContents().get(0);
 					UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-					String username = yourToken.getIssuer();
+					String username = yourToken.getSubject();
 
 					my_gs.userList.addGroup(username, groupname);
 					my_gs.userList.addOwnership(username, groupname);
@@ -150,7 +153,7 @@ public class GroupThread extends Thread
 
 					String groupname = (String)message.getObjContents().get(0);
 					UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-					String username = yourToken.getIssuer();
+					String username = yourToken.getSubject();
 
 					if(!my_gs.groupList.isOwner(groupname, username)){
 						response = new Envelope("FAIL");
@@ -185,7 +188,7 @@ public class GroupThread extends Thread
 
 					String groupname = (String)message.getObjContents().get(0);
 					UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-					String username = yourToken.getIssuer();
+					String username = yourToken.getSubject();
 
 					if(!my_gs.groupList.isOwner(groupname, username)){
 						response = new Envelope("FAIL");
@@ -213,9 +216,10 @@ public class GroupThread extends Thread
 						return;
 					}
 
-					String groupname = (String)message.getObjContents().get(0);
-					UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-					String username = yourToken.getIssuer();
+					String userToAdd = (String)message.getObjContents().get(0);
+					String groupname = (String)message.getObjContents().get(1);
+					UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
+					String username = yourToken.getSubject();
 
 					if(!my_gs.groupList.isOwner(groupname, username)){
 						response = new Envelope("FAIL");
@@ -223,7 +227,7 @@ public class GroupThread extends Thread
 					}
 					else{
 						my_gs.userList.addGroup(username, groupname);
-						my_gs.groupList.addMember(groupname, username);
+						my_gs.groupList.addMember(groupname, userToAdd);
 
 						response = new Envelope("OK");
 						output.writeObject(response);
@@ -246,7 +250,7 @@ public class GroupThread extends Thread
 					String userToDelete = (String) message.getObjContents().get(0);
 					String groupname = (String)message.getObjContents().get(1);
 					UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
-					String username = yourToken.getIssuer();
+					String username = yourToken.getSubject();
 
 					if( userToDelete.equals(username) || !my_gs.groupList.isOwner(groupname, username)){
 						response = new Envelope("FAIL");
@@ -403,7 +407,7 @@ public class GroupThread extends Thread
 	}
 	
 	private void deleteGroup(String groupname, UserToken token){
-		String username = token.getIssuer();
+		String username = token.getSubject();
 		my_gs.userList.removeGroup(username, groupname);	
 
 		//Go through all the group members and remove them!

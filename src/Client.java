@@ -10,6 +10,8 @@ public abstract class Client {
 	protected Socket sock;
 	protected ObjectOutputStream output;
 	protected ObjectInputStream input;
+	protected String myServer;
+	protected int myPort;
 
 	public boolean connect(final String server, final int port) {
 		System.out.println("attempting to connect");
@@ -28,7 +30,15 @@ public abstract class Client {
 		    e.printStackTrace(System.err);
 		    return false;
 		}
-
+	}
+	
+	public boolean connect() {
+		return connect(myServer, myPort);
+	}
+	
+	public Client (String inputServer, int inputPort) {
+		myServer = inputServer;
+		myPort = inputPort;
 	}
 
 	public boolean isConnected() {

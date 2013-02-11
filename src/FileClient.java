@@ -8,6 +8,11 @@ import java.util.List;
 
 public class FileClient extends Client implements FileClientInterface {
 
+	public FileClient(String inputServer, int inputPort) {
+		super(inputServer, inputPort);
+		// TODO Auto-generated constructor stub
+	}
+
 	public boolean delete(String filename, UserToken token) {
 		String remotePath;
 		if (filename.charAt(0)=='/') {

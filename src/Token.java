@@ -1,6 +1,7 @@
+import java.io.Serializable;
 import java.util.*;
 
-public class Token implements UserToken{
+public class Token implements UserToken, Serializable{
 	private String issuer, subject;
 	private List<String> groups;
 
