@@ -18,7 +18,7 @@ public abstract class Client {
 
 		try{
 		    // Connect to the specified server
-		    final Socket sock = new Socket(server, port);
+		    sock = new Socket(server, port);
 		    
 		    // Set up I/O streams with the server
 		    output = new ObjectOutputStream(sock.getOutputStream());
