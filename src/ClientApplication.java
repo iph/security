@@ -80,8 +80,16 @@ public class ClientApplication {
 			@Override
 			public void windowClosing(WindowEvent e) {
 				// To avoid connection resets.
-				gClient.disconnect();
-				fClient.disconnect();
+				if (fClient != null) {
+					if (fClient.isConnected()) {
+						fClient.disconnect();
+					}
+				}
+				if (gClient != null) {
+					if (gClient.isConnected()) {
+						gClient.disconnect();
+					}
+				}
 			}
 		});
 		frame.setBounds(100, 100, 700, 500);

@@ -18,7 +18,8 @@ public class FileServerClientFrame extends JInternalFrame {
 	private JButton btnDeleteFile;
 	private JPanel panel_1;
 	private JButton btnDisconnectFileServer;
-	private JList<String> fileList;
+	//private JList<String> fileList;
+	private JList fileList;
 	
 	private JLabel lblEnterGroup;
 	private JTextField groupUploadField;
@@ -63,7 +64,8 @@ public class FileServerClientFrame extends JInternalFrame {
 		lblNewLabel_3.setHorizontalAlignment(SwingConstants.CENTER);
 		getContentPane().add(lblNewLabel_3, BorderLayout.NORTH);
 		
-		fileList = new JList<String>();
+		fileList = new JList();
+		
 		getContentPane().add(fileList, BorderLayout.CENTER);
 		
 		JPanel panel = new JPanel();
@@ -222,7 +224,7 @@ public class FileServerClientFrame extends JInternalFrame {
 	private void deleteAction() {
 		String filename;
 		
-		filename = fileList.getSelectedValue();
+		filename = (String)fileList.getSelectedValue();
 		
 		if (filename == null) {
 			JOptionPane.showMessageDialog(this, "Select a file to delete!");
@@ -244,7 +246,7 @@ public class FileServerClientFrame extends JInternalFrame {
 		String destFile = "";
 		File saveFile;
 		
-		sourceFile = fileList.getSelectedValue();
+		sourceFile = (String)fileList.getSelectedValue();
 		
 		if (sourceFile == null) {
 			JOptionPane.showMessageDialog(this, "Select a file to download!");

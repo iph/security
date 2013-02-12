@@ -55,10 +55,12 @@ public class GroupServer extends Server {
 			userList.addUser(username);
 			userList.addGroup(username, "ADMIN");
 			userList.addOwnership(username, "ADMIN");
+			
 
 			groupList = new GroupList();
 			groupList.addGroup("ADMIN");
 			groupList.addOwner("ADMIN", username);
+			groupList.addMember("ADMIN", username);
 
 			ObjectOutputStream outStream;
 			try
@@ -118,7 +120,7 @@ public class GroupServer extends Server {
 		//This block listens for connections and creates threads on new connections
 		try
 		{
-			
+			System.out.println("Good to go! Listening for new connections...");
 			final ServerSocket serverSock = new ServerSocket(port);
 			
 			Socket sock = null;

@@ -3,11 +3,9 @@ import java.util.*;
 
 
 	public class UserList implements java.io.Serializable {
-	
-		/**
-		 * 
-		 */
+		
 		private static final long serialVersionUID = 7600343803563417992L;
+		
 		private Hashtable<String, User> list = new Hashtable<String, User>();
 		
 		public synchronized void addUser(String username)
@@ -65,11 +63,9 @@ import java.util.*;
 		
 	
 	class User implements java.io.Serializable {
-
-		/**
-		 * 
-		 */
+		
 		private static final long serialVersionUID = -6699986336399821598L;
+		
 		private ArrayList<String> groups;
 		private ArrayList<String> ownership;
 		
