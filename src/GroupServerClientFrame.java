@@ -2,6 +2,7 @@ import java.awt.*;
 import javax.swing.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.util.List;
 
 
 public class GroupServerClientFrame extends JInternalFrame {
@@ -28,6 +29,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 	private JTextField fileserverField;
 	private JTextField fileserverportField;
 	private JPanel connectFileServerPanel;
+	private JButton btnDeleteUserFrom;
 	
 	/**
 	 * Launch the application.
@@ -59,7 +61,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		getContentPane().setLayout(null);
 		
 		JLabel lblUsername = new JLabel("Username:");
-		lblUsername.setBounds(10, 11, 52, 14);
+		lblUsername.setBounds(10, 11, 64, 14);
 		getContentPane().add(lblUsername);
 		
 		usernameField = new JTextField();
@@ -86,15 +88,15 @@ public class GroupServerClientFrame extends JInternalFrame {
 		groupActionsPanel.setBounds(168, 11, 300, 349);
 		getContentPane().add(groupActionsPanel);
 		GridBagLayout gbl_groupActionsPanel = new GridBagLayout();
-		gbl_groupActionsPanel.columnWidths = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+		gbl_groupActionsPanel.columnWidths = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 		gbl_groupActionsPanel.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-		gbl_groupActionsPanel.columnWeights = new double[]{0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+		gbl_groupActionsPanel.columnWeights = new double[]{0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
 		gbl_groupActionsPanel.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
 		groupActionsPanel.setLayout(gbl_groupActionsPanel);
 		
 		lblModifyUsersAnd = new JLabel("Users and Groups");
 		GridBagConstraints gbc_lblModifyUsersAnd = new GridBagConstraints();
-		gbc_lblModifyUsersAnd.gridwidth = 8;
+		gbc_lblModifyUsersAnd.gridwidth = 9;
 		gbc_lblModifyUsersAnd.insets = new Insets(0, 0, 5, 5);
 		gbc_lblModifyUsersAnd.gridx = 2;
 		gbc_lblModifyUsersAnd.gridy = 0;
@@ -103,7 +105,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		lblUser = new JLabel("User:");
 		GridBagConstraints gbc_lblUser = new GridBagConstraints();
 		gbc_lblUser.anchor = GridBagConstraints.EAST;
-		gbc_lblUser.gridwidth = 3;
+		gbc_lblUser.gridwidth = 4;
 		gbc_lblUser.insets = new Insets(0, 0, 5, 5);
 		gbc_lblUser.gridx = 2;
 		gbc_lblUser.gridy = 2;
@@ -115,7 +117,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		gbc_userField.gridwidth = 5;
 		gbc_userField.insets = new Insets(0, 0, 5, 5);
 		gbc_userField.fill = GridBagConstraints.HORIZONTAL;
-		gbc_userField.gridx = 5;
+		gbc_userField.gridx = 6;
 		gbc_userField.gridy = 2;
 		groupActionsPanel.add(userField, gbc_userField);
 		userField.setColumns(10);
@@ -123,7 +125,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		lblGroup = new JLabel("Group:");
 		GridBagConstraints gbc_lblGroup = new GridBagConstraints();
 		gbc_lblGroup.anchor = GridBagConstraints.EAST;
-		gbc_lblGroup.gridwidth = 3;
+		gbc_lblGroup.gridwidth = 4;
 		gbc_lblGroup.insets = new Insets(0, 0, 5, 5);
 		gbc_lblGroup.gridx = 2;
 		gbc_lblGroup.gridy = 3;
@@ -135,7 +137,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		gbc_groupField.gridwidth = 5;
 		gbc_groupField.insets = new Insets(0, 0, 5, 5);
 		gbc_groupField.fill = GridBagConstraints.HORIZONTAL;
-		gbc_groupField.gridx = 5;
+		gbc_groupField.gridx = 6;
 		gbc_groupField.gridy = 3;
 		groupActionsPanel.add(groupField, gbc_groupField);
 		groupField.setColumns(10);
@@ -148,7 +150,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		});
 		GridBagConstraints gbc_btnCreateUser = new GridBagConstraints();
 		gbc_btnCreateUser.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnCreateUser.gridwidth = 5;
+		gbc_btnCreateUser.gridwidth = 6;
 		gbc_btnCreateUser.insets = new Insets(0, 0, 5, 5);
 		gbc_btnCreateUser.gridx = 1;
 		gbc_btnCreateUser.gridy = 4;
@@ -164,7 +166,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		gbc_btnDeleteUser.fill = GridBagConstraints.HORIZONTAL;
 		gbc_btnDeleteUser.gridwidth = 5;
 		gbc_btnDeleteUser.insets = new Insets(0, 0, 5, 5);
-		gbc_btnDeleteUser.gridx = 6;
+		gbc_btnDeleteUser.gridx = 7;
 		gbc_btnDeleteUser.gridy = 4;
 		groupActionsPanel.add(btnDeleteUser, gbc_btnDeleteUser);
 		
@@ -176,7 +178,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		});
 		GridBagConstraints gbc_btnCreateGroup = new GridBagConstraints();
 		gbc_btnCreateGroup.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnCreateGroup.gridwidth = 5;
+		gbc_btnCreateGroup.gridwidth = 6;
 		gbc_btnCreateGroup.insets = new Insets(0, 0, 5, 5);
 		gbc_btnCreateGroup.gridx = 1;
 		gbc_btnCreateGroup.gridy = 5;
@@ -192,7 +194,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		gbc_btnNewButton_1.fill = GridBagConstraints.HORIZONTAL;
 		gbc_btnNewButton_1.gridwidth = 5;
 		gbc_btnNewButton_1.insets = new Insets(0, 0, 5, 5);
-		gbc_btnNewButton_1.gridx = 6;
+		gbc_btnNewButton_1.gridx = 7;
 		gbc_btnNewButton_1.gridy = 5;
 		groupActionsPanel.add(btnNewButton_1, gbc_btnNewButton_1);
 		
@@ -204,7 +206,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		});
 		GridBagConstraints gbc_btnAddUserTo = new GridBagConstraints();
 		gbc_btnAddUserTo.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnAddUserTo.gridwidth = 10;
+		gbc_btnAddUserTo.gridwidth = 11;
 		gbc_btnAddUserTo.insets = new Insets(0, 0, 5, 5);
 		gbc_btnAddUserTo.gridx = 1;
 		gbc_btnAddUserTo.gridy = 6;
@@ -216,30 +218,44 @@ public class GroupServerClientFrame extends JInternalFrame {
 				boolean returned = listMembersAction();
 			}
 		});
+		
+		btnDeleteUserFrom = new JButton("Delete User from Group");
+		btnDeleteUserFrom.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				deleteUserFromGroupAction();
+			}
+		});
+		GridBagConstraints gbc_btnDeleteUserFrom = new GridBagConstraints();
+		gbc_btnDeleteUserFrom.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnDeleteUserFrom.gridwidth = 10;
+		gbc_btnDeleteUserFrom.insets = new Insets(0, 0, 5, 5);
+		gbc_btnDeleteUserFrom.gridx = 2;
+		gbc_btnDeleteUserFrom.gridy = 7;
+		groupActionsPanel.add(btnDeleteUserFrom, gbc_btnDeleteUserFrom);
 		GridBagConstraints gbc_btnListMembersOf = new GridBagConstraints();
 		gbc_btnListMembersOf.fill = GridBagConstraints.HORIZONTAL;
 		gbc_btnListMembersOf.gridwidth = 10;
 		gbc_btnListMembersOf.insets = new Insets(0, 0, 5, 5);
-		gbc_btnListMembersOf.gridx = 1;
-		gbc_btnListMembersOf.gridy = 7;
+		gbc_btnListMembersOf.gridx = 2;
+		gbc_btnListMembersOf.gridy = 8;
 		groupActionsPanel.add(btnListMembersOf, gbc_btnListMembersOf);
 		
 		lblListOfMembers = new JLabel("List of Members");
 		GridBagConstraints gbc_lblListOfMembers = new GridBagConstraints();
-		gbc_lblListOfMembers.gridwidth = 5;
+		gbc_lblListOfMembers.gridwidth = 6;
 		gbc_lblListOfMembers.insets = new Insets(0, 0, 5, 5);
 		gbc_lblListOfMembers.gridx = 4;
-		gbc_lblListOfMembers.gridy = 8;
+		gbc_lblListOfMembers.gridy = 9;
 		groupActionsPanel.add(lblListOfMembers, gbc_lblListOfMembers);
 		
 		membersTextPane = new JTextPane();
 		GridBagConstraints gbc_membersTextPane = new GridBagConstraints();
-		gbc_membersTextPane.gridheight = 4;
-		gbc_membersTextPane.gridwidth = 10;
+		gbc_membersTextPane.gridheight = 3;
+		gbc_membersTextPane.gridwidth = 11;
 		gbc_membersTextPane.insets = new Insets(0, 0, 0, 5);
 		gbc_membersTextPane.fill = GridBagConstraints.BOTH;
 		gbc_membersTextPane.gridx = 1;
-		gbc_membersTextPane.gridy = 9;
+		gbc_membersTextPane.gridy = 10;
 		groupActionsPanel.add(membersTextPane, gbc_membersTextPane);
 		
 		btnDisconnect = new JButton("Disconnect");
@@ -415,15 +431,19 @@ public class GroupServerClientFrame extends JInternalFrame {
 		}
 		else {
 			String temp = "";
-			for (String member : parentApp.gClient.listMembers(groupField.getText(), parentApp.myToken)) {
-				temp += member;
-				temp += ", ";
+			List<String> tempList = parentApp.gClient.listMembers(groupField.getText(), parentApp.myToken);
+			if (tempList != null) {
+				for (String member : tempList) {
+					temp += member;
+					temp += ", ";
+				}
+				membersTextPane.setText(temp);
+				return true;
 			}
-			membersTextPane.setText(temp);
-			return true;
+			
+			return false;
 		}
 		
 		return false;
 	}
-
 }

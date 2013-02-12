@@ -47,33 +47,6 @@ public class ClientApplication {
 	protected GroupClient gClient;
 	protected FileClient fClient;
 	protected UserToken myToken;
-	
-	private JTextField usernameField;
-	private JLabel lblUser;
-	private JTextField userField;
-	private JLabel lblModifyUsersAnd;
-	private JLabel lblGroup;
-	private JButton btnCreateUser;
-	private JButton btnDeleteUser;
-	private JTextField groupField;
-	private JButton btnCreateGroup;
-	private JButton btnNewButton_1;
-	private JButton btnAddUserTo;
-	private JButton btnListMembersOf;
-	private JTextPane membersTextPane;
-	private JLabel lblListOfMembers;
-	private JButton btnDisconnect;
-	private JLabel lblServer_1;
-	private JLabel lblPort_1;
-	private JTextField fileserverField;
-	private JTextField fileserverportField;
-	private JPanel connectFileServerPanel;
-	private JButton btnDownloadFile;
-	private JButton btnUploadFile;
-	private JButton btnDeleteFile;
-	private JPanel panel_1;
-	private JButton btnDisconnectFileServer;
-	
 
 	/**
 	 * Launch the application.
@@ -118,8 +91,16 @@ public class ClientApplication {
 		desktopPane = new JDesktopPane();
 		frame.getContentPane().add(desktopPane);
 		
+		groupClientFrame = new GroupServerClientFrame(this);
+		groupClientFrame.setLocation(29, 39);
+		desktopPane.add(groupClientFrame);
+		
+		fileClientFrame = new FileServerClientFrame(this);
+		fileClientFrame.setLocation(135, 11);
+		desktopPane.add(fileClientFrame);
+		
 		connectFrame = new JInternalFrame("Connect");
-		connectFrame.setBounds(25, 33, 210, 135);
+		connectFrame.setBounds(247, 160, 210, 135);
 		desktopPane.add(connectFrame);
 		connectFrame.getContentPane().setLayout(null);
 		
@@ -149,7 +130,6 @@ public class ClientApplication {
 		btnConnect.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (connectAction() == true) {
-					System.out.println("here");
 					initializeGroupClientWindow();
 				}
 				else {
@@ -158,12 +138,6 @@ public class ClientApplication {
 			}
 		});
 		connectFrame.setVisible(true);
-		
-		fileClientFrame = new FileServerClientFrame();
-		desktopPane.add(fileClientFrame);
-		
-		groupClientFrame = new GroupServerClientFrame(this);
-		desktopPane.add(groupClientFrame);
 		
 		
 		//setupClient();
@@ -186,15 +160,12 @@ public class ClientApplication {
 		int tempPort;
 		boolean tempBool = false;
 		
-		//JOptionPane.showMessageDialog(null, "Test Dialog:\n" + serverField.getText());
-		
 		if (!(serverField.getText().equals("")) && !(portField.getText().equals(""))) {
 			tempServer = serverField.getText();
 			try {
 				tempPort = Integer.parseInt(portField.getText());
 				gClient = new GroupClient(tempServer, tempPort);
 				tempBool = gClient.connect();
-				System.out.println("tempBool: " + tempBool);
 				return tempBool;
 			}
 			catch (Exception e) {
