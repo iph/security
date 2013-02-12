@@ -56,7 +56,7 @@ public class FileThread extends Thread
 					}
 
 					response.addObject(fileNames);
-					output.writeObject(e);
+					output.writeObject(response);
 				}
 				if(e.getMessage().equals("UPLOADF"))
 				{

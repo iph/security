@@ -1,6 +1,9 @@
 import java.util.*;
 
 public class GroupList implements java.io.Serializable{	
+	
+	private static final long serialVersionUID = 8472291674451045025L;
+	
 	private HashMap<String, Group> list;
 
 	public GroupList(){
@@ -51,6 +54,12 @@ public class GroupList implements java.io.Serializable{
 }
 
 class Group implements java.io.Serializable{
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8293900391158968283L;
+	
 	Set<String> users;
 	Set<String> owners;	
 

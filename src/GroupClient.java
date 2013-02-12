@@ -5,8 +5,12 @@ import java.util.List;
 import java.io.ObjectInputStream;
 
 public class GroupClient extends Client implements GroupClientInterface {
- 
-	 public UserToken getToken(String username)
+	
+	 public GroupClient(String inputServer, int inputPort) {
+		super(inputServer, inputPort);
+	}
+
+	public UserToken getToken(String username)
 	 {
 		try
 		{
