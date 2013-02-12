@@ -1,14 +1,15 @@
 import java.awt.*;
 import java.io.File;
 import java.util.List;
-
 import javax.swing.*;
-
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
 
 public class FileServerClientFrame extends JInternalFrame {
+	
+	private static final long serialVersionUID = -2501440867428581412L;
+	
 	private ClientApplication parentApp;
 	private JFileChooser fileChooser;
 	private JFileChooser saveChooser;
@@ -18,29 +19,12 @@ public class FileServerClientFrame extends JInternalFrame {
 	private JButton btnDeleteFile;
 	private JPanel panel_1;
 	private JButton btnDisconnectFileServer;
-	//private JList<String> fileList;
 	private JList fileList;
 	
 	private JLabel lblEnterGroup;
 	private JTextField groupUploadField;
 	private JLabel lblOrderToUpload;
 	
-	
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					//FileServerClientFrame frame = new FileServerClientFrame();
-					//frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
 
 	/**
 	 * Create the frame.
@@ -58,6 +42,7 @@ public class FileServerClientFrame extends JInternalFrame {
 		setResizable(true);
 		setMaximizable(true);
 		setBounds(329, 69, 400, 400);
+		setLocation(135, 11);
 		getContentPane().setLayout(new BorderLayout(0, 0));
 		
 		JLabel lblNewLabel_3 = new JLabel("File List:");
@@ -265,5 +250,4 @@ public class FileServerClientFrame extends JInternalFrame {
             }
 		}
 	}
-	
 }
