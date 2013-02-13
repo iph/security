@@ -1,0 +1,1 @@
+We have an intuitive graphical interface instead of a command line prompt.

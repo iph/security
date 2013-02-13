@@ -1,0 +1,3 @@
+Compile instructions:
+	`cd` into src
+	javac *.java

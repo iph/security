@@ -1,0 +1,19 @@
+Usage for Client Application:
+	starting: java ClientApplication
+
+	GroupServer operations:
+		
+	1) Type in the ip address + port of the group server, then press connect.
+	2) To get a token, type your username in the top left textbox, then press Get Token
+	(this enables the file server dialogue)
+	3) From there, all the options on the right are available to the user.
+	4) To connect to a file server, after you get the token, just put in the server name and port number
+	of the server you want to connect to.
+	5) Click each corresponding button depending on what you want to do.
+	6) (There is a button for every action, and they are properly named, so I'm ending this here)
+
+Run group server:
+	default (java RunGroupServer [optional port])
+
+Run File Server:
+	default (java RunFileServer [optional port])
