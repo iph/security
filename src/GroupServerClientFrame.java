@@ -305,6 +305,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 		if (parentApp.myToken != null) {
 			groupActionsPanel.setVisible(true);
 			connectFileServerPanel.setVisible(true);
+			System.out.println("Token received!\n" + parentApp.myToken.toString());
 		}
 		else {
 			JOptionPane.showMessageDialog(this, "Invalid username!");

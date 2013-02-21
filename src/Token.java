@@ -44,4 +44,19 @@ public class Token implements UserToken, Serializable{
 
     	return groups;
     }
+    
+    public String toString() {
+    	StringBuilder builder = new StringBuilder();
+    	
+    	builder.append("Token Information:" +
+    			"\nIssuer: " + issuer + 
+    			"\nSubject: " + subject +
+    			"\nGroups: ");
+    	
+    	for (String temp : groups) {
+    		builder.append(temp + " ");
+    	}
+    	
+    	return builder.toString();
+    }
 }

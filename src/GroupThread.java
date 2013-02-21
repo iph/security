@@ -225,8 +225,13 @@ public class GroupThread extends Thread
 						response = new Envelope("FAIL");
 						output.writeObject(response);
 					}
+					else if (!my_gs.userList.checkUser(userToAdd)) {
+						System.out.println("Trying to add " + userToAdd + " to group " + groupname);
+						response = new Envelope("FAIL");
+						output.writeObject(response);
+					}
 					else{
-						my_gs.userList.addGroup(username, groupname);
+						my_gs.userList.addGroup(userToAdd, groupname);
 						my_gs.groupList.addMember(groupname, userToAdd);
 
 						response = new Envelope("OK");
