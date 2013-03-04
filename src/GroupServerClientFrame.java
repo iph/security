@@ -329,12 +329,13 @@ public class GroupServerClientFrame extends JInternalFrame {
 	}
 	
 	private void disconnectAction() {
-		parentApp.gClient.disconnect();
+		parentApp.gClient.secureDisconnect();
 		parentApp.gClient = null;
 		
 		if (parentApp.fClient != null) {
 			if (parentApp.fClient.isConnected()) {
-				parentApp.fClient.disconnect();
+				parentApp.fClient.secureDisconnect();
+				parentApp.gClient = null;
 			}
 		}
 		groupActionsPanel.setVisible(false);

@@ -218,28 +218,29 @@ public class FileClient extends Client implements FileClientInterface {
 					    ArrayList<Object> list = new ArrayList<Object>();
 						list.add(sourceFile);
 						list.add(token);
-						SecureEnvelope secureEnv = makeSecureEnvelope("DOWNLOADF", list);
+						SecureEnvelope secureResponse = makeSecureEnvelope("DOWNLOADF", list);
+						output.writeObject(secureResponse);
 					
-						secureEnv = (SecureEnvelope)input.readObject();
+						SecureEnvelope secureMessage = (SecureEnvelope)input.readObject();
 					    
-						while (secureEnv.getMessage().compareTo("CHUNK")==0) { 
-							ArrayList<Object> tempList = getDecryptedPayload(secureEnv);
+						while (secureMessage.getMessage().compareTo("CHUNK")==0) {
+							ArrayList<Object> tempList = getDecryptedPayload(secureMessage);
 							fos.write((byte[])tempList.get(0), 0, (Integer)tempList.get(1));
 							System.out.printf(".");
-							secureEnv = new SecureEnvelope("DOWNLOADF"); //Success
-							output.writeObject(secureEnv);
-							secureEnv = (SecureEnvelope)input.readObject();									
+							secureResponse = new SecureEnvelope("DOWNLOADF"); //Success
+							output.writeObject(secureResponse);
+							secureMessage = (SecureEnvelope)input.readObject();									
 						}										
 						fos.close();
 						
-					    if(secureEnv.getMessage().compareTo("EOF")==0) {
+					    if(secureMessage.getMessage().compareTo("EOF")==0) {
 					    	 fos.close();
 								System.out.printf("\nTransfer successful file %s\n", sourceFile);
-								secureEnv = new SecureEnvelope("OK"); //Success
-								output.writeObject(secureEnv);
+								secureResponse = new SecureEnvelope("OK"); //Success
+								output.writeObject(secureResponse);
 						}
 						else {
-								System.out.printf("Error reading file %s (%s)\n", sourceFile, secureEnv.getMessage());
+								System.out.printf("Error reading file %s (%s)\n", sourceFile, secureMessage.getMessage());
 								file.delete();
 								return false;								
 						}

@@ -49,6 +49,7 @@ public class FileServerClientFrame extends JInternalFrame {
 		lblNewLabel_3.setHorizontalAlignment(SwingConstants.CENTER);
 		getContentPane().add(lblNewLabel_3, BorderLayout.NORTH);
 		
+		// This does a warning in JavaSE 7. It isn't parameterized in SE 6.
 		fileList = new JList();
 		
 		getContentPane().add(fileList, BorderLayout.CENTER);
@@ -162,7 +163,8 @@ public class FileServerClientFrame extends JInternalFrame {
 
 	
 	private void disconnectAction() {
-		parentApp.fClient.disconnect();
+		parentApp.fClient.secureDisconnect();
+		parentApp.fClient = null;
 		parentApp.fileClientFrame.setVisible(false);
 	}
 	

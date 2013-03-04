@@ -154,12 +154,15 @@ public class FileThread extends Thread
 								secureResponse = new SecureEnvelope("READY"); //Success
 								output.writeObject(secureResponse);
 
-								secureEnv = (SecureEnvelope)input.readObject();
+								secureMessage = (SecureEnvelope)input.readObject();
 								while (secureMessage.getMessage().compareTo("CHUNK")==0) {
+									// Get new secureMessage contents
+									list = getDecryptedPayload(secureMessage, true);
+									
 									fos.write((byte[])list.get(0), 0, (Integer)list.get(1));
 									secureResponse = new SecureEnvelope("READY"); //Success
 									output.writeObject(secureResponse);
-									secureEnv = (SecureEnvelope)input.readObject();
+									secureMessage = (SecureEnvelope)input.readObject();
 								}
 
 								if(secureMessage.getMessage().compareTo("EOF")==0) {
@@ -201,67 +204,68 @@ public class FileThread extends Thread
 						try
 						{
 							File f = new File("shared_files/_"+remotePath.replace('/', '_'));
-						if (!f.exists()) {
-							System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
-							secureEnv = new SecureEnvelope("ERROR_NOTONDISK");
-							output.writeObject(secureEnv);
-
-						}
-						else {
-							FileInputStream fis = new FileInputStream(f);
-
-							do {
-								byte[] buf = new byte[4096];
-								if (secureMessage.getMessage().compareTo("DOWNLOADF")!=0) {
-									System.out.printf("Server error: %s\n", secureMessage.getMessage());
-									break;
-								}
-								int n = fis.read(buf); //can throw an IOException
-								if (n > 0) {
-									System.out.printf(".");
-								} else if (n < 0) {
-									System.out.println("Read error");
-
-								}
-								
-								ArrayList<Object> tempList = new ArrayList<Object>();
-								tempList.add(buf);
-								tempList.add(new Integer(n));
-								
-								secureEnv = makeSecureEnvelope("CHUNK", tempList);
-
+							if (!f.exists()) {
+								System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
+								secureEnv = new SecureEnvelope("ERROR_NOTONDISK");
 								output.writeObject(secureEnv);
-
-								secureMessage = (SecureEnvelope)input.readObject();
-
-
-							}
-							while (fis.available()>0);
-
-							//If server indicates success, return the member list
-							if(secureMessage.getMessage().compareTo("DOWNLOADF")==0)
-							{
-
-								secureEnv = new SecureEnvelope("EOF");
-								output.writeObject(secureEnv);
-
-								secureEnv = (SecureEnvelope)input.readObject();
-								if(secureEnv.getMessage().compareTo("OK")==0) {
-									System.out.printf("File data upload successful\n");
-								}
-								else {
-
-									System.out.printf("Upload failed: %s\n", secureEnv.getMessage());
-
-								}
-
+	
 							}
 							else {
-
-								System.out.printf("Upload failed: %s\n", secureEnv.getMessage());
-
+								FileInputStream fis = new FileInputStream(f);
+	
+								do {
+									byte[] buf = new byte[4096];
+									if (secureMessage.getMessage().compareTo("DOWNLOADF")!=0) {
+										System.out.printf("Server error: %s\n", secureMessage.getMessage());
+										break;
+									}
+									int n = fis.read(buf); //can throw an IOException
+									if (n > 0) {
+										System.out.printf(".");
+									} else if (n < 0) {
+										System.out.println("Read error");
+	
+									}
+									
+									ArrayList<Object> tempList = new ArrayList<Object>();
+									tempList.add(buf);
+									tempList.add(new Integer(n));
+									
+									secureEnv = makeSecureEnvelope("CHUNK", tempList);
+	
+									output.writeObject(secureEnv);
+	
+									secureMessage = (SecureEnvelope)input.readObject();
+	
+	
+								}
+								while (fis.available()>0);
+	
+								//If server indicates success, return the member list
+								if(secureMessage.getMessage().compareTo("DOWNLOADF")==0)
+								{
+	
+									secureEnv = new SecureEnvelope("EOF");
+									output.writeObject(secureEnv);
+	
+									secureEnv = (SecureEnvelope)input.readObject();
+									if(secureEnv.getMessage().compareTo("OK")==0) {
+										System.out.printf("File data upload successful\n");
+									}
+									else {
+	
+										System.out.printf("Upload failed: %s\n", secureEnv.getMessage());
+	
+									}
+	
+								}
+								else {
+	
+									System.out.printf("Upload failed: %s\n", secureEnv.getMessage());
+	
+								}
+								fis.close();
 							}
-						}
 						}
 						catch(Exception e1)
 						{
