@@ -301,6 +301,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 	}
 	
 	private void getTokenAction() {
+		System.out.println("username: " + usernameField.getText());
 		parentApp.myToken = parentApp.gClient.getToken(usernameField.getText());
 		if (parentApp.myToken != null) {
 			groupActionsPanel.setVisible(true);
@@ -314,6 +315,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 	
 	private void disconnectAction() {
 		parentApp.gClient.disconnect();
+		parentApp.gClient = null;
 		
 		if (parentApp.fClient != null) {
 			if (parentApp.fClient.isConnected()) {

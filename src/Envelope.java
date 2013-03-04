@@ -7,8 +7,8 @@ public class Envelope implements java.io.Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = -7726335089122193103L;
-	private String msg;
-	private ArrayList<Object> objContents = new ArrayList<Object>();
+	protected String msg;
+	protected ArrayList<Object> objContents = new ArrayList<Object>();
 	
 	public Envelope(String text)
 	{

@@ -1,7 +1,11 @@
 import javax.swing.*;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.security.Security;
 
 
 public class ClientApplication {
@@ -24,6 +28,7 @@ public class ClientApplication {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
+					Security.addProvider(new BouncyCastleProvider());
 					ClientApplication window = new ClientApplication();
 					window.frame.setVisible(true);
 				} catch (Exception e) {
@@ -56,7 +61,7 @@ public class ClientApplication {
 				}
 				if (gClient != null) {
 					if (gClient.isConnected()) {
-						gClient.disconnect();
+						gClient.secureDisconnect();
 					}
 				}
 			}

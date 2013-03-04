@@ -6,7 +6,14 @@
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.*;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.Security;
 import java.util.*;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.util.encoders.Hex;
 
 
 public class GroupServer extends Server {
@@ -14,6 +21,7 @@ public class GroupServer extends Server {
 	public static final int SERVER_PORT = 8765;
 	public UserList userList;
 	public GroupList groupList;
+	public PrivateKey privateKey;
     
 	public GroupServer() {
 		super(SERVER_PORT, "ALPHA");
@@ -35,6 +43,36 @@ public class GroupServer extends Server {
 		//This runs a thread that saves the lists on program exit
 		Runtime runtime = Runtime.getRuntime();
 		runtime.addShutdownHook(new ShutDownListener(this));
+		
+		// Import the private key
+		Security.addProvider(new BouncyCastleProvider());
+		PEMReader reader = null;
+		privateKey = null;
+		try {
+			reader = new PEMReader(new FileReader("private-key.pem"));
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		Object pemObject = null;
+		try {
+			pemObject = reader.readObject();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// Set the private key
+		KeyPair pair = (KeyPair)pemObject;
+		privateKey = pair.getPrivate();
+		
+		if(privateKey == null) {
+			System.out.println("Problem setting up the private key.");
+		}
+		else {
+			System.out.println("Imported the private key: " + new String(Hex.encode(privateKey.getEncoded())));
+		}
+		
 		
 		//Open user file to get user list
 		try

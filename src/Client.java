@@ -50,12 +50,27 @@ public abstract class Client {
 		}
 	}
 
-	public void disconnect()	 {
+	public void disconnect() {
 		if (isConnected()) {
 			try
 			{
 				Envelope message = new Envelope("DISCONNECT");
 				output.writeObject(message);
+			}
+			catch(Exception e)
+			{
+				System.err.println("Error: " + e.getMessage());
+				e.printStackTrace(System.err);
+			}
+		}
+	}
+	
+	public void secureDisconnect() {
+		if (isConnected()) {
+			try
+			{
+				SecureEnvelope secureMessage = new SecureEnvelope("DISCONNECT");
+				output.writeObject(secureMessage);
 			}
 			catch(Exception e)
 			{
