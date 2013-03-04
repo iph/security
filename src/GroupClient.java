@@ -34,9 +34,9 @@ import org.bouncycastle.util.encoders.Hex;
 
 public class GroupClient extends Client implements GroupClientInterface {
 	
-	X509Certificate cert;
-	PublicKey publicKey;
-	Key sessionKey;
+	private X509Certificate cert;
+	private PublicKey publicKey;
+	private Key sessionKey;
 	//IvParameterSpec currentIV;
 	
 	public GroupClient(String inputServer, int inputPort) {
@@ -44,7 +44,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 		publicKey = null;
 		cert = null;
 		
-		
+		// Import the public key
 		PEMReader reader = null;
 		try {
 			reader = new PEMReader(new FileReader("public-cert.pem"));

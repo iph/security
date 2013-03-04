@@ -285,7 +285,22 @@ public class GroupServerClientFrame extends JInternalFrame {
 				tempPort = Integer.parseInt(fileserverportField.getText());
 				parentApp.fClient = new FileClient(tempServer, tempPort);
 				if(parentApp.fClient.connect() == true) {
-					parentApp.initializeFileClientWindow();
+					JScrollPane scrollPane = new JScrollPane(new JLabel(parentApp.fClient.getFingerprint()));  
+			        scrollPane.setPreferredSize(new Dimension(300,300)); 
+			        Object message = scrollPane; 
+			        
+					int choice = JOptionPane.showConfirmDialog(
+						    this, message,
+						    "Verify File Server",
+						    JOptionPane.YES_NO_OPTION);
+					
+					if (choice == JOptionPane.YES_OPTION) {
+						parentApp.fClient.setupChannel();
+						parentApp.initializeFileClientWindow();
+					}
+					else {
+						JOptionPane.showMessageDialog(this, "Canceled connecting!");
+					}
 				}
 				else {
 					JOptionPane.showMessageDialog(this, "Invalid server or port, or host down.");
