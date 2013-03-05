@@ -26,6 +26,7 @@ public class FileServer extends Server {
 	public static FileList fileList;
 	public PrivateKey privateKey;
 	public PublicKey publicKey;
+	public PublicKey publicKeyGS;
 	
 	public FileServer() {
 		super(SERVER_PORT, "FilePile");
@@ -177,6 +178,38 @@ public class FileServer extends Server {
 		}
 		else {
 			System.out.println("Imported the public key: " + new String(Hex.encode(publicKey.getEncoded())));
+		}
+		
+		// Import the group server's public key
+		publicReader = null;
+		try {
+			publicReader = new PEMReader(new FileReader("public-cert.pem"));
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		publicPEMObject = null;
+		try {
+			publicPEMObject = publicReader.readObject();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (publicPEMObject instanceof X509Certificate) {
+		    X509Certificate cert = (X509Certificate)publicPEMObject;
+		    try {
+				cert.checkValidity(); // to check it's valid in time
+				publicKeyGS = cert.getPublicKey();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
+		}
+		if(publicKeyGS == null) {
+			System.out.println("Problem setting up the group servers public key.");
+		}
+		else {
+			System.out.println("Imported the group servers public key: " + new String(Hex.encode(publicKeyGS.getEncoded())));
 		}
 		
 		

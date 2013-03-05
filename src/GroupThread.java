@@ -6,10 +6,12 @@ import java.net.Socket;
 import java.io.*;
 import java.security.InvalidKeyException;
 import java.security.Key;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.Signature;
 import java.util.*;
 
 import javax.crypto.BadPaddingException;
@@ -366,16 +368,44 @@ public class GroupThread extends Thread
 	private UserToken createToken(String username) 
 	{
 		//Check that user exists
+		// TODO: Checking password
 		if(my_gs.userList.checkUser(username))
 		{
 			//Issue a new token with server's name, user's name, and user's groups
+			// Now adding a signature as well
 			UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
+			
+			byte[] tokenBytes = yourToken.toByteArray();
+			byte[] signedTokenBytes = signBytes(tokenBytes);
+			
+			yourToken.setSignature(signedTokenBytes);
+
 			return yourToken;
 		}
 		else
 		{
 			return null;
 		}
+	}
+	
+	// Sign bytes (for token)
+	public byte[] signBytes(byte[] text) {
+		byte[] sigBytes = null;
+		Signature sig = null;
+		
+		System.out.println("Signing bytes...");
+		
+		try {
+			sig = Signature.getInstance("SHA512WithRSAEncryption", "BC");
+			sig.initSign(my_gs.privateKey);
+			sig.update(text);
+			sigBytes = sig.sign();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return sigBytes;
 	}
 	
 	

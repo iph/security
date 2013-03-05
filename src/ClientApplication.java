@@ -56,7 +56,7 @@ public class ClientApplication {
 				// To avoid connection resets.
 				if (fClient != null) {
 					if (fClient.isConnected()) {
-						fClient.disconnect();
+						fClient.secureDisconnect();
 					}
 				}
 				if (gClient != null) {

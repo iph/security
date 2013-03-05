@@ -1,9 +1,13 @@
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.*;
 
-public class Token implements UserToken, Serializable{
+public class Token implements UserToken, Serializable {
+	private static final long serialVersionUID = 1337L;
 	private String issuer, subject;
 	private List<String> groups;
+	private byte[] signature;
 
 	public Token(String issuer_, String subject_, List<String> groups_){
 		issuer = issuer_;
@@ -11,8 +15,42 @@ public class Token implements UserToken, Serializable{
 		groups = groups_;
 	}
 
-	 public String getIssuer(){
-	 	return issuer;
+	public Token(String issuer_, String subject_, List<String> groups_, byte[] signature_) {
+		this(issuer_, subject_, groups_);
+		signature = Arrays.copyOf(signature_, signature_.length);
+	}
+
+	public String getIssuer() {
+		return issuer;
+	}
+
+	public void setSignature(byte[] signature_) {
+		signature = Arrays.copyOf(signature_, signature_.length);
+	}
+
+	public byte[] getSignature() {
+		return signature;
+	}
+
+	public byte[] toByteArray() {
+		byte[] returnBytes = null;
+				
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutputStream out = null;
+		try {
+			out = new ObjectOutputStream(bos);   
+			out.writeObject(issuer);
+			out.writeObject(subject);
+			out.writeObject(groups);
+			returnBytes = bos.toByteArray();
+			out.close();
+			bos.close();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return returnBytes;
 	 }
 
 

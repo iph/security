@@ -12,6 +12,27 @@ import java.util.List;
  */
 public interface UserToken
 {
+	
+	/**
+	 * 
+	 * @param signature_ The signature as a byte array
+	 */
+	public void setSignature(byte[] signature_);
+	
+	/**
+	 * 
+	 * @return The signature as a byte array
+	 */
+	public byte[] getSignature();
+	
+	/**
+	 * 
+	 * @return The token data as a byte array
+	 */
+	public byte[] toByteArray();
+	
+	
+	
     /**
      * This method should return a string describing the issuer of
      * this token.  This string identifies the group server that
