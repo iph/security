@@ -8,7 +8,9 @@ import java.net.Socket;
 import java.io.*;
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Security;
+import java.security.cert.X509Certificate;
 import java.util.*;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -22,6 +24,7 @@ public class GroupServer extends Server {
 	public UserList userList;
 	public GroupList groupList;
 	public PrivateKey privateKey;
+	public PublicKey publicKey;
     
 	public GroupServer() {
 		super(SERVER_PORT, "ALPHA");
@@ -60,6 +63,38 @@ public class GroupServer extends Server {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		
+		// Import the public key
+		PEMReader publicReader = null;
+		try {
+			publicReader = new PEMReader(new FileReader("public-cert.pem"));
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		Object publicPEMObject = null;
+		try {
+			publicPEMObject = publicReader.readObject();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (publicPEMObject instanceof X509Certificate) {
+		    X509Certificate cert = (X509Certificate)publicPEMObject;
+		    try {
+				cert.checkValidity(); // to check it's valid in time
+				publicKey = cert.getPublicKey();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
+		}
+		if(publicKey == null) {
+			System.out.println("Problem setting up the public key.");
+		}
+		else {
+			System.out.println("Imported the public key: " + new String(Hex.encode(publicKey.getEncoded())));
 		}
 		
 		// Set the private key

@@ -133,12 +133,17 @@ public class GroupThread extends Thread
 							if(list.get(1) != null)
 							{
 								String username = (String)list.get(0); //Extract the username
-								UserToken yourToken = (UserToken)list.get(1); //Extract the token
+								Token yourToken = (Token)list.get(1); //Extract the token
 								
 								System.out.println("Create user: " + username);
-								if(createUser(username, yourToken))
-								{
-									secureResponse = new SecureEnvelope("OK"); //Success
+								if (!verifyToken(yourToken)) {
+									secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
+								}
+								else {
+									if(createUser(username, yourToken))
+									{
+										secureResponse = new SecureEnvelope("OK"); //Success
+									}
 								}
 							}
 						}
@@ -163,11 +168,16 @@ public class GroupThread extends Thread
 							if(list.get(1) != null)
 							{
 								String username = (String)list.get(0); //Extract the username
-								UserToken yourToken = (UserToken)list.get(1); //Extract the token
+								Token yourToken = (Token)list.get(1); //Extract the token
 								
-								if(deleteUser(username, yourToken))
-								{
-									secureResponse = new SecureEnvelope("OK"); //Success
+								if (!verifyToken(yourToken)) {
+									secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
+								}
+								else {
+									if(deleteUser(username, yourToken))
+									{
+										secureResponse = new SecureEnvelope("OK"); //Success
+									}
 								}
 							}
 						}
@@ -191,17 +201,23 @@ public class GroupThread extends Thread
 						return;
 					}
 					String groupname = (String)list.get(0);
-					UserToken yourToken = (UserToken)list.get(1); //Extract the token
-					String username = yourToken.getSubject();
-
-					my_gs.userList.addGroup(username, groupname);
-					my_gs.userList.addOwnership(username, groupname);
-
-					my_gs.groupList.addGroup(groupname);
-					my_gs.groupList.addOwner(groupname, username);
-
-					secureResponse = new SecureEnvelope("OK");
-					output.writeObject(secureResponse);
+					Token yourToken = (Token)list.get(1); //Extract the token
+					if (!verifyToken(yourToken)) {
+						secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
+						output.writeObject(secureResponse);
+					}
+					else {
+						String username = yourToken.getSubject();
+	
+						my_gs.userList.addGroup(username, groupname);
+						my_gs.userList.addOwnership(username, groupname);
+	
+						my_gs.groupList.addGroup(groupname);
+						my_gs.groupList.addOwner(groupname, username);
+	
+						secureResponse = new SecureEnvelope("OK");
+						output.writeObject(secureResponse);
+					}
 				}
 				else if(secureMessage.getMessage().equals("DGROUP")) //Client wants to delete a group
 				{
@@ -220,7 +236,7 @@ public class GroupThread extends Thread
 					}
 
 					String groupname = (String)list.get(0);
-					UserToken yourToken = (UserToken)list.get(1); //Extract the token
+					Token yourToken = (Token)list.get(1); //Extract the token
 					String username = yourToken.getSubject();
 
 					if(!my_gs.groupList.isOwner(groupname, username)){
@@ -257,19 +273,25 @@ public class GroupThread extends Thread
 					}
 
 					String groupname = (String)list.get(0);
-					UserToken yourToken = (UserToken)list.get(1); //Extract the token
+					Token yourToken = (Token)list.get(1); //Extract the token
 					String username = yourToken.getSubject();
-
-					if(!my_gs.groupList.isOwner(groupname, username)) {
-						secureResponse = new SecureEnvelope("FAIL");
+					
+					if (!verifyToken(yourToken)) {
+						secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
 						output.writeObject(secureResponse);
 					}
 					else {
-						ArrayList<Object> newList = new ArrayList<Object>();
-						newList.add(new ArrayList<String>(my_gs.groupList.getMembers(groupname)));
-						secureResponse = makeSecureEnvelope("OK", newList);
-						output.writeObject(secureResponse);
-
+						if(!my_gs.groupList.isOwner(groupname, username)) {
+							secureResponse = new SecureEnvelope("FAIL");
+							output.writeObject(secureResponse);
+						}
+						else {
+							ArrayList<Object> newList = new ArrayList<Object>();
+							newList.add(new ArrayList<String>(my_gs.groupList.getMembers(groupname)));
+							secureResponse = makeSecureEnvelope("OK", newList);
+							output.writeObject(secureResponse);
+	
+						}
 					}
 
 				}
@@ -290,24 +312,31 @@ public class GroupThread extends Thread
 
 					String userToAdd = (String)list.get(0);
 					String groupname = (String)list.get(1);
-					UserToken yourToken = (UserToken)list.get(2); //Extract the token
+					Token yourToken = (Token)list.get(2); //Extract the token
 					String username = yourToken.getSubject();
-
-					if(!my_gs.groupList.isOwner(groupname, username)){
-						secureResponse = new SecureEnvelope("FAIL");
+					
+					if (!verifyToken(yourToken)) {
+						secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
 						output.writeObject(secureResponse);
 					}
-					else if (!my_gs.userList.checkUser(userToAdd)) {
-						System.out.println("Trying to add " + userToAdd + " to group " + groupname);
-						secureResponse = new SecureEnvelope("FAIL");
-						output.writeObject(secureResponse);
-					}
-					else{
-						my_gs.userList.addGroup(userToAdd, groupname);
-						my_gs.groupList.addMember(groupname, userToAdd);
-
-						secureResponse = new SecureEnvelope("OK");
-						output.writeObject(secureResponse);
+					else {
+	
+						if(!my_gs.groupList.isOwner(groupname, username)){
+							secureResponse = new SecureEnvelope("FAIL");
+							output.writeObject(secureResponse);
+						}
+						else if (!my_gs.userList.checkUser(userToAdd)) {
+							System.out.println("Trying to add " + userToAdd + " to group " + groupname);
+							secureResponse = new SecureEnvelope("FAIL");
+							output.writeObject(secureResponse);
+						}
+						else{
+							my_gs.userList.addGroup(userToAdd, groupname);
+							my_gs.groupList.addMember(groupname, userToAdd);
+	
+							secureResponse = new SecureEnvelope("OK");
+							output.writeObject(secureResponse);
+						}
 					}
 
 				}
@@ -328,21 +357,26 @@ public class GroupThread extends Thread
 
 					String userToDelete = (String) list.get(0);
 					String groupname = (String)list.get(1);
-					UserToken yourToken = (UserToken)list.get(2); //Extract the token
+					Token yourToken = (Token)list.get(2); //Extract the token
 					String username = yourToken.getSubject();
-
-					if( userToDelete.equals(username) || !my_gs.groupList.isOwner(groupname, username)){
-						secureResponse = new SecureEnvelope("FAIL");
+					
+					if (!verifyToken(yourToken)) {
+						secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
 						output.writeObject(secureResponse);
 					}
-					else{
-						my_gs.userList.removeGroup(userToDelete, groupname);
-						my_gs.groupList.removeMember(groupname, userToDelete);
-
-						secureResponse = new SecureEnvelope("OK");
-						output.writeObject(secureResponse);
+					else {
+						if( userToDelete.equals(username) || !my_gs.groupList.isOwner(groupname, username)){
+							secureResponse = new SecureEnvelope("FAIL");
+							output.writeObject(secureResponse);
+						}
+						else{
+							my_gs.userList.removeGroup(userToDelete, groupname);
+							my_gs.groupList.removeMember(groupname, userToDelete);
+	
+							secureResponse = new SecureEnvelope("OK");
+							output.writeObject(secureResponse);
+						}
 					}
-
 
 				}
 				else if(secureMessage.getMessage().equals("DISCONNECT")) //Client wants to disconnect
@@ -657,5 +691,32 @@ public class GroupThread extends Thread
 		}
 		
 		return list;
+	}
+	
+	private boolean verifyToken(Token token) {
+		boolean verified = false;
+		
+		byte[] sigBytes = null;
+		byte[] tokenBytes = null;
+		Signature sig = null;
+		
+		tokenBytes = token.toByteArray();
+		sigBytes = token.getSignature();
+		
+		System.out.println("Verifying token...");
+		
+		try {
+			sig = Signature.getInstance("SHA512WithRSAEncryption", "BC");
+			sig.initVerify(my_gs.publicKey);
+			sig.update(tokenBytes);
+			verified = sig.verify(sigBytes);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		System.out.println("Token verified: " + verified);
+		
+		return verified;
 	}
 }
