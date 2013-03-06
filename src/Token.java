@@ -6,16 +6,16 @@ import java.util.*;
 public class Token implements UserToken, Serializable {
 	private static final long serialVersionUID = 1337L;
 	private String issuer, subject;
-	private List<String> groups;
+	private HashSet<String> groups;
 	private byte[] signature;
 
-	public Token(String issuer_, String subject_, List<String> groups_){
+	public Token(String issuer_, String subject_, HashSet<String> groups_){
 		issuer = issuer_;
 		subject = subject_;
 		groups = groups_;
 	}
 
-	public Token(String issuer_, String subject_, List<String> groups_, byte[] signature_) {
+	public Token(String issuer_, String subject_, HashSet<String> groups_, byte[] signature_) {
 		this(issuer_, subject_, groups_);
 		signature = Arrays.copyOf(signature_, signature_.length);
 	}
@@ -78,7 +78,7 @@ public class Token implements UserToken, Serializable {
      * @return The list of group memberships encoded in this token
      *
      */
-    public List<String> getGroups(){
+    public HashSet<String> getGroups(){
 
     	return groups;
     }
@@ -89,11 +89,7 @@ public class Token implements UserToken, Serializable {
     	builder.append("Token Information:" +
     			"\nIssuer: " + issuer + 
     			"\nSubject: " + subject +
-    			"\nGroups: ");
-    	
-    	for (String temp : groups) {
-    		builder.append(temp + " ");
-    	}
+    			"\nGroups: " + groups);
     	
     	return builder.toString();
     }

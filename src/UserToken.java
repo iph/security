@@ -1,5 +1,4 @@
-
-import java.util.List;
+import java.util.HashSet;
 
 /**
  * A simple interface to the token data structure that will be
@@ -64,9 +63,9 @@ public interface UserToken
      * and "G2" defined at the group server "Server1", this method
      * will return ["G1", "G2"].
      *
-     * @return The list of group memberships encoded in this token
+     * @return The HashSet of group memberships encoded in this token
      *
      */
-    public List<String> getGroups();
+    public HashSet<String> getGroups();
 
 }   //-- end interface UserToken

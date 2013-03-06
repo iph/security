@@ -207,15 +207,13 @@ public class GroupThread extends Thread
 						output.writeObject(secureResponse);
 					}
 					else {
-						String username = yourToken.getSubject();
-	
-						my_gs.userList.addGroup(username, groupname);
-						my_gs.userList.addOwnership(username, groupname);
-	
-						my_gs.groupList.addGroup(groupname);
-						my_gs.groupList.addOwner(groupname, username);
-	
-						secureResponse = new SecureEnvelope("OK");
+						if (createGroup(groupname, yourToken)) {
+							secureResponse = new SecureEnvelope("OK");
+						}
+						else {
+							secureResponse = new SecureEnvelope("FAIL");
+						}
+						
 						output.writeObject(secureResponse);
 					}
 				}
@@ -229,32 +227,23 @@ public class GroupThread extends Thread
 				    */
 					ArrayList<Object> list = getDecryptedPayload(secureMessage, true);
 
-					if(list.size() < 2){
-						secureResponse = new SecureEnvelope("FAIL");
-						output.writeObject(secureResponse);
-						return;
-					}
-
-					String groupname = (String)list.get(0);
-					Token yourToken = (Token)list.get(1); //Extract the token
-					String username = yourToken.getSubject();
-
-					if(!my_gs.groupList.isOwner(groupname, username)){
+					if(list.size() < 2) {
 						secureResponse = new SecureEnvelope("FAIL");
 						output.writeObject(secureResponse);
 					}
-					else{
-						my_gs.userList.removeGroup(username, groupname);	
+					else {
+						String groupname = (String)list.get(0);
+						Token yourToken = (Token)list.get(1); //Extract the token
 
-						//Go through all the group members and remove them!
-						for(String user: my_gs.groupList.getMembers(groupname)){
-							my_gs.userList.removeGroup(user, groupname);
+						// deleteGroup method does all the work
+						if (deleteGroup(groupname, yourToken)) {
+							secureResponse = new SecureEnvelope("OK");
 						}
-						// @FIXME: Is there more than one user as an owner? If yes, fix this to remove all groups
-						my_gs.groupList.deleteGroup(groupname);
-						secureResponse = new SecureEnvelope("OK");
+						else {
+							secureResponse = new SecureEnvelope("FAIL");
+						}
+							
 						output.writeObject(secureResponse);
-
 					}
 				}
 				else if(secureMessage.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
@@ -281,7 +270,7 @@ public class GroupThread extends Thread
 						output.writeObject(secureResponse);
 					}
 					else {
-						if(!my_gs.groupList.isOwner(groupname, username)) {
+						if(!my_gs.groupList.isMember(groupname, username)) {
 							secureResponse = new SecureEnvelope("FAIL");
 							output.writeObject(secureResponse);
 						}
@@ -313,32 +302,20 @@ public class GroupThread extends Thread
 					String userToAdd = (String)list.get(0);
 					String groupname = (String)list.get(1);
 					Token yourToken = (Token)list.get(2); //Extract the token
-					String username = yourToken.getSubject();
-					
 					if (!verifyToken(yourToken)) {
 						secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
 						output.writeObject(secureResponse);
 					}
 					else {
-	
-						if(!my_gs.groupList.isOwner(groupname, username)){
-							secureResponse = new SecureEnvelope("FAIL");
-							output.writeObject(secureResponse);
-						}
-						else if (!my_gs.userList.checkUser(userToAdd)) {
-							System.out.println("Trying to add " + userToAdd + " to group " + groupname);
-							secureResponse = new SecureEnvelope("FAIL");
-							output.writeObject(secureResponse);
-						}
-						else{
-							my_gs.userList.addGroup(userToAdd, groupname);
-							my_gs.groupList.addMember(groupname, userToAdd);
-	
+						if (addUserToGroup(groupname, userToAdd, yourToken)) {
 							secureResponse = new SecureEnvelope("OK");
-							output.writeObject(secureResponse);
 						}
+						else {
+							secureResponse = new SecureEnvelope("FAIL");
+						}
+						
+						output.writeObject(secureResponse);	
 					}
-
 				}
 				else if(secureMessage.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
 				{
@@ -355,29 +332,24 @@ public class GroupThread extends Thread
 						return;
 					}
 
-					String userToDelete = (String) list.get(0);
+					String userToRemove = (String) list.get(0);
 					String groupname = (String)list.get(1);
 					Token yourToken = (Token)list.get(2); //Extract the token
-					String username = yourToken.getSubject();
 					
 					if (!verifyToken(yourToken)) {
 						secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
 						output.writeObject(secureResponse);
 					}
 					else {
-						if( userToDelete.equals(username) || !my_gs.groupList.isOwner(groupname, username)){
-							secureResponse = new SecureEnvelope("FAIL");
-							output.writeObject(secureResponse);
-						}
-						else{
-							my_gs.userList.removeGroup(userToDelete, groupname);
-							my_gs.groupList.removeMember(groupname, userToDelete);
-	
+						if (removeUserFromGroup(groupname, userToRemove, yourToken)) {
 							secureResponse = new SecureEnvelope("OK");
-							output.writeObject(secureResponse);
 						}
+						else {
+							secureResponse = new SecureEnvelope("FAIL");
+						}
+						
+						output.writeObject(secureResponse);	
 					}
-
 				}
 				else if(secureMessage.getMessage().equals("DISCONNECT")) //Client wants to disconnect
 				{
@@ -443,121 +415,126 @@ public class GroupThread extends Thread
 	}
 	
 	
+	private boolean addUserToGroup(String groupname, String username, Token yourToken) {
+		String requester = yourToken.getSubject();
+		
+		if ((my_gs.groupList.isOwner(groupname, requester)) && 
+		(my_gs.userList.checkUser(username)) && 
+		!(my_gs.groupList.isMember(groupname, username))) {
+			my_gs.userList.addGroup(username, groupname);
+			my_gs.groupList.addMember(groupname, username);
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	private boolean removeUserFromGroup(String groupname, String username, Token yourToken) {
+		String requester = yourToken.getSubject();
+		
+		if ((my_gs.groupList.isOwner(groupname, requester)) && 
+		(my_gs.userList.checkUser(username)) && 
+		(my_gs.groupList.isMember(groupname, username))) {
+			my_gs.userList.removeGroup(username, groupname);
+			my_gs.groupList.removeMember(groupname, username);
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
 	//Method to create a user
 	private boolean createUser(String username, UserToken yourToken)
 	{
 		String requester = yourToken.getSubject();
 		
-		//Check if requester exists
-		if(my_gs.userList.checkUser(requester))
-		{
-			//Get the user's groups
-			ArrayList<String> temp = my_gs.userList.getUserGroups(requester);
+		// Check if requester exists
+		if(my_gs.userList.checkUser(requester)) {
 			//requester needs to be an administrator
-			if(temp.contains("ADMIN"))
-			{
+			if(my_gs.userList.getUserGroups(requester).contains("ADMIN")) {
 				//Does user already exist?
-				if(my_gs.userList.checkUser(username))
-				{
-					return false; //User already exists
+				if(my_gs.userList.checkUser(username)) {
+					return false; // User already exists
 				}
-				else
-				{
-					my_gs.userList.addUser(username);
-					return true;
+				else {
+					return my_gs.userList.addUser(username); // Return if the user was added successfully
 				}
 			}
-			else
-			{
+			else {
 				return false; //requester not an administrator
 			}
 		}
-		else
-		{
+		else {
 			return false; //requester does not exist
 		}
 	}
 	
-	//Method to delete a user
-	private boolean deleteUser(String username, UserToken yourToken)
-	{
+	private boolean deleteUser (String username, Token yourToken) {
 		String requester = yourToken.getSubject();
 		
-		//Does requester exist?
-		if(my_gs.userList.checkUser(requester))
-		{
-			ArrayList<String> temp = my_gs.userList.getUserGroups(requester);
-			//requester needs to be an administer
-			if(temp.contains("ADMIN"))
-			{
-				//Does user exist?
-				if(my_gs.userList.checkUser(username))
-				{
-					//User needs deleted from the groups they belong
-					ArrayList<String> deleteFromGroups = new ArrayList<String>();
-					
-					//This will produce a hard copy of the list of groups this user belongs
-					for(int index = 0; index < my_gs.userList.getUserGroups(username).size(); index++)
-					{
-						deleteFromGroups.add(my_gs.userList.getUserGroups(username).get(index));
-					}
-					
-					//Delete the user from the groups
-					//If user is the owner, removeMember will automatically delete group!
-					for(int index = 0; index < deleteFromGroups.size(); index++)
-					{
-						my_gs.groupList.removeMember(username, deleteFromGroups.get(index));
-					}
-					
-					//If groups are owned, they must be deleted
-					ArrayList<String> deleteOwnedGroup = new ArrayList<String>();
-					
-					//Make a hard copy of the user's ownership list
-					for(int index = 0; index < my_gs.userList.getUserOwnership(username).size(); index++)
-					{
-						deleteOwnedGroup.add(my_gs.userList.getUserOwnership(username).get(index));
-					}
-					
-					//Delete owned groups
-					for(int index = 0; index < deleteOwnedGroup.size(); index++)
-					{
-						//Use the delete group method. Token must be created for this action
-						deleteGroup(deleteOwnedGroup.get(index), new Token(my_gs.name, username, deleteOwnedGroup));
-					}
-					
-					//Delete the user from the user list
-					my_gs.userList.deleteUser(username);
-					
-					return true;	
+		if ((my_gs.userList.checkUser(requester)) && 
+		(my_gs.userList.getUserGroups(requester).contains("ADMIN")) && 
+		(my_gs.userList.checkUser(username))) {
+			// Get the user's groups for ownership checking later
+			ArrayList<String> groupsOwned = new ArrayList<String>(my_gs.userList.getUserOwnership(username));
+			ArrayList<String> groupsMember = new ArrayList<String>(my_gs.userList.getUserGroups(username));
+			
+			my_gs.userList.deleteUser(username);
+			
+			// Remove user from all groups which they are a member
+			for (String groupname : groupsMember) {
+				my_gs.groupList.removeMember(groupname, username);
+			}
+			
+			// Delete groups where they are the only owner; remove them as an owner where they are not.
+			for (String groupname : groupsOwned) {
+				if (my_gs.groupList.isOnlyOwner(groupname, username)) {
+					// Use the existing method, so just create a basic token
+					deleteGroup(groupname, new Token(null, username, null));
 				}
-				else
-				{
-					return false; //User does not exist
-					
+				else {
+					// Just remove them as an owner if they are not the only one
+					my_gs.groupList.removeOwner(groupname, username);
 				}
 			}
-			else
-			{
-				return false; //requester is not an administer
-			}
+			
+			return true;
 		}
-		else
-		{
-			return false; //requester does not exist
+		else {
+			return false;
 		}
 	}
 	
-	private void deleteGroup(String groupname, UserToken token){
-		String username = token.getSubject();
-		my_gs.userList.removeGroup(username, groupname);	
-
-		//Go through all the group members and remove them!
-		for(String user: my_gs.groupList.getMembers(groupname)){
-			my_gs.userList.removeGroup(user, groupname);
+	private boolean createGroup(String groupname, Token yourToken) {
+		String username = yourToken.getSubject();
+		if (my_gs.groupList.checkGroup(groupname)) {
+			return false; // Group already exists
 		}
-		// @FIXME: Is there more than one user as an owner? If yes, fix this to remove all groups
-		my_gs.groupList.deleteGroup(groupname);
+		else {
+			my_gs.userList.addGroup(username, groupname);
+			my_gs.userList.addOwnership(username, groupname);
 
+			my_gs.groupList.addGroup(groupname);
+			my_gs.groupList.addOwner(groupname, username);
+			my_gs.groupList.addMember(groupname, username);
+		}
+		
+		return true;
+	}
+	
+	private boolean deleteGroup(String groupname, Token yourToken) {
+		// Only permitted if the user is an owner
+		if (my_gs.groupList.isOwner(groupname, yourToken.getSubject())) {
+			my_gs.userList.removeGroupFromAllUsers(groupname);
+			my_gs.userList.removeOwnershipFromAllUsers(groupname);
+			return my_gs.groupList.deleteGroup(groupname);
+		}
+		else {
+			return false;
+		}
+		
 	}
 	
 	

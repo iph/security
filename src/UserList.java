@@ -1,120 +1,124 @@
 /* This list represents the users on the server */
 import java.util.*;
 
-
 	public class UserList implements java.io.Serializable {
 		
 		private static final long serialVersionUID = 7600343803563417992L;
 		
-		private Hashtable<String, User> list = new Hashtable<String, User>();
+		private HashMap<String, User> list = new HashMap<String, User>();
 		
-		public synchronized void addUser(String username)
+		public synchronized boolean addUser(String username)
 		{
 			User newUser = new User();
-			list.put(username, newUser);
+			// We want it to be null, that means there was no previous user, which is good and means nothing is broken.
+			return (list.put(username, newUser) == null);
 		}
 		
-		public synchronized void deleteUser(String username)
+		public synchronized boolean deleteUser(String username)
 		{
-			list.remove(username);
+			// We want it to be something other than null, meaning a user was deleted.
+			return (list.remove(username) != null);
 		}
 		
 		public synchronized boolean checkUser(String username)
 		{
-			if(list.containsKey(username))
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			return list.containsKey(username);
 		}
 		
-		public synchronized ArrayList<String> getUserGroups(String username)
+		public synchronized HashSet<String> getUserGroups(String username)
 		{
 			return list.get(username).getGroups();
 		}
 		
-		public synchronized ArrayList<String> getUserOwnership(String username)
+		public synchronized HashSet<String> getUserOwnership(String username)
 		{
 			return list.get(username).getOwnership();
 		}
 		
-		public synchronized void addGroup(String user, String groupname)
+		public synchronized boolean addGroup(String user, String groupname)
 		{
-			list.get(user).addGroup(groupname);
+			return list.get(user).addGroup(groupname);
 		}
 		
-		public synchronized void removeGroup(String user, String groupname)
+		public synchronized boolean removeGroup(String user, String groupname)
 		{
-			list.get(user).removeGroup(groupname);
+			return list.get(user).removeGroup(groupname);
 		}
 		
-		public synchronized void addOwnership(String user, String groupname)
+		public synchronized boolean addOwnership(String user, String groupname)
 		{
-			list.get(user).addOwnership(groupname);
+			return list.get(user).addOwnership(groupname);
 		}
 		
-		public synchronized void removeOwnership(String user, String groupname)
+		public synchronized boolean removeOwnership(String user, String groupname)
 		{
-			list.get(user).removeOwnership(groupname);
+			return list.get(user).removeOwnership(groupname);
 		}
+		
+		public synchronized void removeGroupFromAllUsers(String groupname) {
+			for (User user : list.values()) {
+				user.removeGroup(groupname);
+			}
+		}
+		
+		public synchronized void removeOwnershipFromAllUsers(String groupname) {
+			for (User user : list.values()) {
+				user.removeOwnership(groupname);
+			}
+		} 
 		
 	
 	class User implements java.io.Serializable {
 		
 		private static final long serialVersionUID = -6699986336399821598L;
 		
-		private ArrayList<String> groups;
-		private ArrayList<String> ownership;
+		private HashSet<String> groupSet;
+		private HashSet<String> ownershipSet;
 		
 		public User()
 		{
-			groups = new ArrayList<String>();
-			ownership = new ArrayList<String>();
+			groupSet = new HashSet<String>();
+			ownershipSet = new HashSet<String>();
 		}
 		
-		public ArrayList<String> getGroups()
+		public HashSet<String> getGroups()
 		{
-			return groups;
+			return groupSet;
 		}
 		
-		public ArrayList<String> getOwnership()
+		public HashSet<String> getOwnership()
 		{
-			return ownership;
+			return ownershipSet;
 		}
 		
-		public void addGroup(String group)
+		public boolean addGroup(String group)
 		{
-			groups.add(group);
+			return groupSet.add(group);
 		}
 		
-		public void removeGroup(String group)
+		public boolean removeGroup(String group)
 		{
-			if(!groups.isEmpty())
-			{
-				if(groups.contains(group))
-				{
-					groups.remove(groups.indexOf(group));
-				}
+			// Not sure if you remove from an empty set what happens
+			if (groupSet.isEmpty()) {
+				return false;
 			}
+			
+			return groupSet.remove(group);
 		}
 		
-		public void addOwnership(String group)
+		public boolean addOwnership(String group)
 		{
-			ownership.add(group);
+			return ownershipSet.add(group);
 		}
 		
-		public void removeOwnership(String group)
+		public boolean removeOwnership(String group)
 		{
-			if(!ownership.isEmpty())
-			{
-				if(ownership.contains(group))
-				{
-					ownership.remove(ownership.indexOf(group));
-				}
+			// Not sure if you remove from an empty set what happens
+			if (groupSet.isEmpty()) {
+				return false;
 			}
+			
+			return groupSet.remove(group);
 		}
 		
 	}
