@@ -17,3 +17,9 @@ Run group server:
 
 Run File Server:
 	default (java RunFileServer [optional port])
+
+Generate Group Server Certificate:
+	java CertificateGenerator
+
+Generate File Server Certificate:
+	java FileServerCertificateGenerator
