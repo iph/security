@@ -64,9 +64,9 @@ public class GroupServerClientFrame extends JInternalFrame {
 				.addGroup(gl_topPanel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_topPanel.createParallelGroup(Alignment.TRAILING)
-						.addComponent(connectFileServerPanel, Alignment.LEADING, GroupLayout.PREFERRED_SIZE, 500, Short.MAX_VALUE)
 						.addComponent(groupActionsPanel, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-						.addComponent(getTokenPanel, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 500, Short.MAX_VALUE))
+						.addComponent(connectFileServerPanel, Alignment.LEADING, GroupLayout.PREFERRED_SIZE, 504, Short.MAX_VALUE)
+						.addComponent(getTokenPanel, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 504, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_topPanel.setVerticalGroup(
@@ -74,11 +74,11 @@ public class GroupServerClientFrame extends JInternalFrame {
 				.addGroup(gl_topPanel.createSequentialGroup()
 					.addContainerGap()
 					.addComponent(getTokenPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addGap(28)
-					.addComponent(groupActionsPanel, GroupLayout.PREFERRED_SIZE, 271, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(groupActionsPanel, GroupLayout.PREFERRED_SIZE, 293, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(connectFileServerPanel, GroupLayout.PREFERRED_SIZE, 87, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(26, Short.MAX_VALUE))
+					.addContainerGap(25, Short.MAX_VALUE))
 		);
 		
 		JLabel lblConnectToA = new JLabel("Connect to a File Server");
@@ -186,31 +186,38 @@ public class GroupServerClientFrame extends JInternalFrame {
 		
 		membersTextPane = new JTextPane();
 		membersTextPane.setEditable(false);
+		
+		JButton btnAddOwner = new JButton("Add Owner to Group");
+		btnAddOwner.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				addOwnerToGroupAction();
+			}
+		});
 		GroupLayout gl_groupActionsPanel = new GroupLayout(groupActionsPanel);
 		gl_groupActionsPanel.setHorizontalGroup(
 			gl_groupActionsPanel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_groupActionsPanel.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.LEADING, false)
-							.addComponent(btnCreateGroup, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-							.addComponent(btnNewButton_1, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-							.addComponent(btnDeleteUser, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-							.addComponent(btnCreateUser, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-							.addGroup(gl_groupActionsPanel.createSequentialGroup()
-								.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.TRAILING, false)
-									.addComponent(lblUser, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-									.addComponent(lblGroup, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.LEADING)
-									.addComponent(userField, GroupLayout.PREFERRED_SIZE, 119, GroupLayout.PREFERRED_SIZE)
-									.addComponent(groupField, GroupLayout.PREFERRED_SIZE, 119, GroupLayout.PREFERRED_SIZE))))
-						.addComponent(btnAddUserTo, GroupLayout.PREFERRED_SIZE, 235, GroupLayout.PREFERRED_SIZE)
-						.addComponent(btnDeleteUserFrom, GroupLayout.PREFERRED_SIZE, 235, GroupLayout.PREFERRED_SIZE))
-					.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.TRAILING, false)
+					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.LEADING, false)
+						.addComponent(btnAddOwner, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addComponent(btnCreateGroup, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addComponent(btnNewButton_1, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addComponent(btnDeleteUser, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addComponent(btnCreateUser, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addGroup(gl_groupActionsPanel.createSequentialGroup()
+							.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.TRAILING, false)
+								.addComponent(lblUser, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+								.addComponent(lblGroup, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.LEADING)
+								.addComponent(userField, GroupLayout.PREFERRED_SIZE, 119, GroupLayout.PREFERRED_SIZE)
+								.addComponent(groupField, GroupLayout.PREFERRED_SIZE, 119, GroupLayout.PREFERRED_SIZE)))
+						.addComponent(btnAddUserTo, GroupLayout.DEFAULT_SIZE, 235, Short.MAX_VALUE)
+						.addComponent(btnDeleteUserFrom, GroupLayout.DEFAULT_SIZE, 235, Short.MAX_VALUE))
+					.addPreferredGap(ComponentPlacement.RELATED, 14, Short.MAX_VALUE)
+					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.TRAILING)
 						.addComponent(membersTextPane)
-						.addComponent(btnListMembersOf, GroupLayout.DEFAULT_SIZE, 235, Short.MAX_VALUE))
+						.addComponent(btnListMembersOf, GroupLayout.PREFERRED_SIZE, 235, GroupLayout.PREFERRED_SIZE))
 					.addContainerGap())
 		);
 		gl_groupActionsPanel.setVerticalGroup(
@@ -219,15 +226,15 @@ public class GroupServerClientFrame extends JInternalFrame {
 					.addContainerGap()
 					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblUser)
-						.addComponent(userField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.BASELINE)
-						.addComponent(lblGroup)
-						.addComponent(groupField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(userField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 						.addComponent(btnListMembersOf))
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.LEADING, false)
 						.addGroup(gl_groupActionsPanel.createSequentialGroup()
+							.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.BASELINE)
+								.addComponent(lblGroup)
+								.addComponent(groupField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+							.addPreferredGap(ComponentPlacement.RELATED)
 							.addComponent(btnCreateUser)
 							.addPreferredGap(ComponentPlacement.RELATED)
 							.addComponent(btnDeleteUser)
@@ -238,8 +245,11 @@ public class GroupServerClientFrame extends JInternalFrame {
 							.addPreferredGap(ComponentPlacement.RELATED)
 							.addComponent(btnAddUserTo)
 							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(btnDeleteUserFrom))
-						.addComponent(membersTextPane)))
+							.addComponent(btnDeleteUserFrom)
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addComponent(btnAddOwner))
+						.addComponent(membersTextPane))
+					.addContainerGap(30, Short.MAX_VALUE))
 		);
 		groupActionsPanel.setLayout(gl_groupActionsPanel);
 		getTokenPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
@@ -425,6 +435,20 @@ public class GroupServerClientFrame extends JInternalFrame {
 			}
 			else {
 				JOptionPane.showMessageDialog(this, "Failed to delete user from group!");
+			}
+		}
+	}
+	
+	private void addOwnerToGroupAction() {
+		if ((groupField.getText().equals("")) || (userField.getText().equals(""))) {
+			JOptionPane.showMessageDialog(this, "Enter a user AND group!");
+		}
+		else {
+			if ((parentApp.gClient.addUserToGroup(userField.getText(), groupField.getText(), parentApp.myToken)) == true) {
+				JOptionPane.showMessageDialog(this, "Owner added to group successfully!");
+			}
+			else {
+				JOptionPane.showMessageDialog(this, "Failed to add owner to group!");
 			}
 		}
 	}

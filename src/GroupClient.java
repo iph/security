@@ -403,6 +403,36 @@ public class GroupClient extends Client implements GroupClientInterface {
 			}
 	 }
 	 
+	 public boolean addOwnerToGroup(String username, String groupname, UserToken token)
+	 {
+		 try
+			{
+				SecureEnvelope secureMessage = null, secureResponse = null;
+				ArrayList<Object> list = new ArrayList<Object>();
+				list.add(username);
+				list.add(groupname);
+				list.add(token);
+				secureMessage = makeSecureEnvelope("AOWNERTOGROUP", list);
+				output.writeObject(secureMessage);
+				
+				secureResponse = (SecureEnvelope)input.readObject();
+				
+				//If server indicates success, return true
+				if(secureResponse.getMessage().equals("OK"))
+				{
+					return true;
+				}
+				
+				return false;
+			}
+			catch(Exception e)
+			{
+				System.err.println("Error: " + e.getMessage());
+				e.printStackTrace(System.err);
+				return false;
+			}
+	 }
+	 
 	 public boolean deleteUserFromGroup(String username, String groupname, UserToken token)
 	 {
 		 try

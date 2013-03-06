@@ -317,6 +317,34 @@ public class GroupThread extends Thread
 						output.writeObject(secureResponse);	
 					}
 				}
+				else if(secureMessage.getMessage().equals("AOWNERTOGROUP")) // Client wants to add owner to a group
+				{
+					ArrayList<Object> list = getDecryptedPayload(secureMessage, true);
+					
+					if(list.size() < 2){
+						secureResponse = new SecureEnvelope("FAIL");
+						output.writeObject(secureResponse);
+						return;
+					}
+
+					String userToAdd = (String)list.get(0);
+					String groupname = (String)list.get(1);
+					Token yourToken = (Token)list.get(2); //Extract the token
+					if (!verifyToken(yourToken)) {
+						secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
+						output.writeObject(secureResponse);
+					}
+					else {
+						if (addOwnerToGroup(groupname, userToAdd, yourToken)) {
+							secureResponse = new SecureEnvelope("OK");
+						}
+						else {
+							secureResponse = new SecureEnvelope("FAIL");
+						}
+						
+						output.writeObject(secureResponse);	
+					}
+				}
 				else if(secureMessage.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
 				{
 				    /*
@@ -412,6 +440,27 @@ public class GroupThread extends Thread
 		}
 		
 		return sigBytes;
+	}
+	
+	private boolean addOwnerToGroup(String groupname, String username, Token yourToken) {
+		String requester = yourToken.getSubject();
+		// For this to work, the requester must already be an owner
+		if ((my_gs.groupList.isOwner(groupname, requester)) && 
+		(my_gs.userList.checkUser(username)) && 
+		!(my_gs.groupList.isOwner(groupname, username))) {
+			// Add the user as an owner
+			my_gs.userList.addOwnership(username, groupname);
+			my_gs.groupList.addOwner(groupname, username);
+			// If they are not a member, add them as one
+			if (!my_gs.groupList.isMember(groupname, username)) {
+				my_gs.userList.addGroup(username, groupname);
+				my_gs.groupList.addMember(groupname, username);
+			}
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 	
 	
