@@ -33,12 +33,13 @@ public interface GroupClientInterface
      * there are no security checks.
      *
      * @param username The user whose token is being requested
+     * @param password The password for the user
      *
      * @return A UserToken describing the permissions of "username."
      *         If this user does not exist, a null value will be returned.
      *
      */
-    public UserToken getToken(final String username);
+    public UserToken getToken(final String username, final String password);
 
 
     /**
@@ -46,12 +47,13 @@ public interface GroupClientInterface
      * user invoking it is a member of the special group "ADMIN".
      *
      * @param username The name of the user to create
+     * @param password The password of the user that you are going to create.
      * @param token    The token of the user requesting the create operation
      *
      * @return true if the new user was created, false otherwise
      *
      */
-    public boolean createUser(final String username, final UserToken token);
+    public boolean createUser(final String username, final String password, final UserToken token);
 
 
     /**

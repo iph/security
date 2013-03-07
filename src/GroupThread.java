@@ -95,8 +95,12 @@ public class GroupThread extends Thread
 						// Get the decrypted payload, TRUE because it's using the session key
 						ArrayList<Object> list = getDecryptedPayload(secureMessage, true);
 						// Get the username from the object list
+						if(list.size() < 2){
+							secureResponse = new SecureEnvelope("FAIL");
+							output.writeObject(secureResponse);
+						}
 						username = (String)list.get(0);
-						
+						String password = (String)list.get(1);
 						// If the username is null, send a FAIL message
 						if ((username == null) || (!my_gs.userList.checkUser(username))) {
 							//System.out.println("username: " + username);
@@ -105,7 +109,7 @@ public class GroupThread extends Thread
 						}
 						else {
 							// Create the token for the user specified
-							UserToken yourToken = createToken(username);
+							UserToken yourToken = createToken(username, password);
 							ArrayList<Object> newList = new ArrayList<Object>();
 							newList.add(yourToken);
 							// Respond to the client. On error, the client will receive a null token
@@ -120,7 +124,7 @@ public class GroupThread extends Thread
 					
 					ArrayList<Object> list = getDecryptedPayload(secureMessage, true);
 					
-					if(list.size() < 2)
+					if(list.size() < 3)
 					{
 						secureResponse = new SecureEnvelope("FAIL");
 					}
@@ -128,24 +132,23 @@ public class GroupThread extends Thread
 					{
 						secureResponse = new SecureEnvelope("FAIL");
 						
-						if(list.get(0) != null)
+						if(list.get(0) != null && list.get(1) != null && list.get(2) != null)
 						{
-							if(list.get(1) != null)
-							{
-								String username = (String)list.get(0); //Extract the username
-								Token yourToken = (Token)list.get(1); //Extract the token
-								
-								System.out.println("Create user: " + username);
-								if (!verifyToken(yourToken)) {
-									secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
+							    String username = (String)list.get(0); //Extract the username
+							    String password = (String)list.get(1);
+							    Token yourToken = (Token)list.get(2); //Extract the token
+
+							    System.out.println("Create user: " + username + ", password: " + password);
+							    if (!verifyToken(yourToken)) {
+								    secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
+							    }
+							    else
+							    {
+								if(createUser(username, password, yourToken))
+								{
+									secureResponse = new SecureEnvelope("OK"); //Success
 								}
-								else {
-									if(createUser(username, yourToken))
-									{
-										secureResponse = new SecureEnvelope("OK"); //Success
-									}
-								}
-							}
+							    }
 						}
 					}
 					
@@ -399,11 +402,12 @@ public class GroupThread extends Thread
 	}
 	
 	//Method to create tokens
-	private UserToken createToken(String username) 
+	private UserToken createToken(String username, String password) 
 	{
 		//Check that user exists
 		// TODO: Checking password
-		if(my_gs.userList.checkUser(username))
+		System.out.println(password);
+		if(my_gs.userList.checkUserPassword(username, password))
 		{
 			//Issue a new token with server's name, user's name, and user's groups
 			// Now adding a signature as well
@@ -435,7 +439,6 @@ public class GroupThread extends Thread
 			sig.update(text);
 			sigBytes = sig.sign();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -495,7 +498,7 @@ public class GroupThread extends Thread
 	}
 	
 	//Method to create a user
-	private boolean createUser(String username, UserToken yourToken)
+    private boolean createUser(String username, String password, UserToken yourToken)
 	{
 		String requester = yourToken.getSubject();
 		
@@ -508,7 +511,7 @@ public class GroupThread extends Thread
 					return false; // User already exists
 				}
 				else {
-					return my_gs.userList.addUser(username); // Return if the user was added successfully
+					return my_gs.userList.addUser(username, password); // Return if the user was added successfully
 				}
 			}
 			else {
@@ -623,7 +626,6 @@ public class GroupThread extends Thread
 				inCipher.init(Cipher.ENCRYPT_MODE, sessionKey, ivSpec);
 				cipherText = inCipher.doFinal(plainText);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -634,7 +636,6 @@ public class GroupThread extends Thread
 				System.out.println("plainText length: " + plainText.length);
 				cipherText = inCipher.doFinal(plainText);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -662,7 +663,6 @@ public class GroupThread extends Thread
 				outCipher.init(Cipher.DECRYPT_MODE, sessionKey, ivSpec);
 				plainText = outCipher.doFinal(cipherText);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -672,7 +672,6 @@ public class GroupThread extends Thread
 				outCipher.init(Cipher.DECRYPT_MODE, my_gs.privateKey, new SecureRandom());
 				plainText = outCipher.doFinal(cipherText);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -692,7 +691,6 @@ public class GroupThread extends Thread
 		  out.close();
 		  bos.close();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -712,7 +710,6 @@ public class GroupThread extends Thread
 		  in.close();
 		  
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -737,7 +734,6 @@ public class GroupThread extends Thread
 			sig.update(tokenBytes);
 			verified = sig.verify(sigBytes);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

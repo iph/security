@@ -121,11 +121,12 @@ public class GroupServer extends Server {
 			System.out.println("UserList File Does Not Exist. Creating UserList...");
 			System.out.println("No users currently exist. Your account will be the administrator.");
 			System.out.print("Enter your username: ");
-			String username = console.next();
-			
+			String username = console.nextLine();
+			System.out.print("Enter your password: ");
+			String password = console.nextLine();
 			//Create a new list, add current user to the ADMIN group. They now own the ADMIN group.
 			userList = new UserList();
-			userList.addUser(username);
+			userList.addUser(username, password);
 			userList.addGroup(username, "ADMIN");
 			userList.addOwnership(username, "ADMIN");
 			

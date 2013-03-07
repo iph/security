@@ -34,6 +34,9 @@ public class GroupServerClientFrame extends JInternalFrame {
 	private JPanel groupActionsPanel;
 	private JPanel connectFileServerPanel;
 	private JPanel panel_2;
+	private JTextField passwordField;
+	private JLabel label;
+	private JTextField pwField;
 
 	/**
 	 * Create the frame.
@@ -45,12 +48,12 @@ public class GroupServerClientFrame extends JInternalFrame {
 		setIconifiable(true);
 		setResizable(true);
 		setMaximizable(true);
-		setBounds(25, 69, 600, 528);
+		setBounds(25, 69, 687, 528);
 		
 		getContentPane().setLayout(null);
 		
 		JPanel topPanel = new JPanel();
-		topPanel.setBounds(12, 12, 524, 461);
+		topPanel.setBounds(12, 12, 653, 461);
 		getContentPane().add(topPanel);
 		
 		JPanel getTokenPanel = new JPanel();
@@ -64,9 +67,9 @@ public class GroupServerClientFrame extends JInternalFrame {
 				.addGroup(gl_topPanel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_topPanel.createParallelGroup(Alignment.TRAILING)
-						.addComponent(groupActionsPanel, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-						.addComponent(connectFileServerPanel, Alignment.LEADING, GroupLayout.PREFERRED_SIZE, 504, Short.MAX_VALUE)
-						.addComponent(getTokenPanel, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 504, Short.MAX_VALUE))
+						.addComponent(groupActionsPanel, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 546, Short.MAX_VALUE)
+						.addComponent(connectFileServerPanel, Alignment.LEADING, GroupLayout.PREFERRED_SIZE, 546, Short.MAX_VALUE)
+						.addComponent(getTokenPanel, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 586, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_topPanel.setVerticalGroup(
@@ -78,7 +81,7 @@ public class GroupServerClientFrame extends JInternalFrame {
 					.addComponent(groupActionsPanel, GroupLayout.PREFERRED_SIZE, 293, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(connectFileServerPanel, GroupLayout.PREFERRED_SIZE, 87, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(25, Short.MAX_VALUE))
+					.addContainerGap(22, Short.MAX_VALUE))
 		);
 		
 		JLabel lblConnectToA = new JLabel("Connect to a File Server");
@@ -193,6 +196,11 @@ public class GroupServerClientFrame extends JInternalFrame {
 				addOwnerToGroupAction();
 			}
 		});
+		
+		label = new JLabel("Password:");
+		
+		pwField = new JTextField();
+		pwField.setColumns(10);
 		GroupLayout gl_groupActionsPanel = new GroupLayout(groupActionsPanel);
 		gl_groupActionsPanel.setHorizontalGroup(
 			gl_groupActionsPanel.createParallelGroup(Alignment.LEADING)
@@ -214,27 +222,37 @@ public class GroupServerClientFrame extends JInternalFrame {
 								.addComponent(groupField, GroupLayout.PREFERRED_SIZE, 119, GroupLayout.PREFERRED_SIZE)))
 						.addComponent(btnAddUserTo, GroupLayout.DEFAULT_SIZE, 235, Short.MAX_VALUE)
 						.addComponent(btnDeleteUserFrom, GroupLayout.DEFAULT_SIZE, 235, Short.MAX_VALUE))
-					.addPreferredGap(ComponentPlacement.RELATED, 14, Short.MAX_VALUE)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.TRAILING)
-						.addComponent(membersTextPane)
-						.addComponent(btnListMembersOf, GroupLayout.PREFERRED_SIZE, 235, GroupLayout.PREFERRED_SIZE))
+						.addComponent(membersTextPane, GroupLayout.DEFAULT_SIZE, 315, Short.MAX_VALUE)
+						.addComponent(btnListMembersOf, GroupLayout.PREFERRED_SIZE, 235, GroupLayout.PREFERRED_SIZE)
+						.addGroup(Alignment.LEADING, gl_groupActionsPanel.createSequentialGroup()
+							.addComponent(label, GroupLayout.PREFERRED_SIZE, 75, GroupLayout.PREFERRED_SIZE)
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addComponent(pwField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
 					.addContainerGap())
 		);
 		gl_groupActionsPanel.setVerticalGroup(
 			gl_groupActionsPanel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_groupActionsPanel.createSequentialGroup()
 					.addContainerGap()
+					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.BASELINE)
+							.addComponent(lblUser)
+							.addComponent(userField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_groupActionsPanel.createSequentialGroup()
+							.addGap(2)
+							.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.BASELINE)
+								.addComponent(label)
+								.addComponent(pwField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))))
+					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.BASELINE)
-						.addComponent(lblUser)
-						.addComponent(userField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(lblGroup)
+						.addComponent(groupField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 						.addComponent(btnListMembersOf))
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.LEADING, false)
+					.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.LEADING)
 						.addGroup(gl_groupActionsPanel.createSequentialGroup()
-							.addGroup(gl_groupActionsPanel.createParallelGroup(Alignment.BASELINE)
-								.addComponent(lblGroup)
-								.addComponent(groupField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-							.addPreferredGap(ComponentPlacement.RELATED)
 							.addComponent(btnCreateUser)
 							.addPreferredGap(ComponentPlacement.RELATED)
 							.addComponent(btnDeleteUser)
@@ -248,18 +266,27 @@ public class GroupServerClientFrame extends JInternalFrame {
 							.addComponent(btnDeleteUserFrom)
 							.addPreferredGap(ComponentPlacement.RELATED)
 							.addComponent(btnAddOwner))
-						.addComponent(membersTextPane))
-					.addContainerGap(30, Short.MAX_VALUE))
+						.addComponent(membersTextPane, GroupLayout.PREFERRED_SIZE, 211, GroupLayout.PREFERRED_SIZE))
+					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
 		);
 		groupActionsPanel.setLayout(gl_groupActionsPanel);
 		getTokenPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 		
-		JLabel lblUsername = new JLabel("Username:");
+		JLabel lblUsername = new JLabel("User:");
 		getTokenPanel.add(lblUsername);
 		
 		usernameField = new JTextField();
+		usernameField.setBackground(Color.WHITE);
+		usernameField.setToolTipText("Username");
 		getTokenPanel.add(usernameField);
 		usernameField.setColumns(10);
+		
+		JLabel lblPassword = new JLabel("Password:");
+		getTokenPanel.add(lblPassword);
+		
+		passwordField = new JTextField();
+		getTokenPanel.add(passwordField);
+		passwordField.setColumns(10);
 		
 		JButton btnGetToken = new JButton("Get Token!");
 		getTokenPanel.add(btnGetToken);
@@ -327,14 +354,14 @@ public class GroupServerClientFrame extends JInternalFrame {
 	
 	private void getTokenAction() {
 		System.out.println("username: " + usernameField.getText());
-		parentApp.myToken = parentApp.gClient.getToken(usernameField.getText());
+		parentApp.myToken = parentApp.gClient.getToken(usernameField.getText(), passwordField.getText());
 		if (parentApp.myToken != null) {
 			groupActionsPanel.setVisible(true);
 			connectFileServerPanel.setVisible(true);
 			System.out.println("Token received!\n" + parentApp.myToken.toString());
 		}
 		else {
-			JOptionPane.showMessageDialog(this, "Invalid username!");
+			JOptionPane.showMessageDialog(this, "Invalid username/password!");
 		}
 	}
 	
@@ -359,8 +386,11 @@ public class GroupServerClientFrame extends JInternalFrame {
 		if (userField.getText().equals("")) {
 			JOptionPane.showMessageDialog(this, "Enter a user to create one!");
 		}
+		else if(pwField.getText().equals("")){
+			JOptionPane.showMessageDialog(this, "Enter a user to create one!");
+		}
 		else {
-			if ((parentApp.gClient.createUser(userField.getText(), parentApp.myToken)) == true) {
+			if ((parentApp.gClient.createUser(userField.getText(), pwField.getText(), parentApp.myToken)) == true) {
 				JOptionPane.showMessageDialog(this, "Created user successfully!");
 			}
 			else {

@@ -178,7 +178,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 		}
 	}
 
-	public UserToken getToken(String username)
+	public UserToken getToken(String username, String password)
 	 {
 		try
 		{
@@ -190,8 +190,8 @@ public class GroupClient extends Client implements GroupClientInterface {
 			ArrayList<Object> tempList = new ArrayList<Object>();
 			
 			// Add the username
-			// TODO: PASSWORDS!!!!
 			tempList.add(username);
+			tempList.add(password);
 			
 			// Make a new SecureEnvelope using the appropriate method
 			// Set the message type to GET to return a token
@@ -227,13 +227,14 @@ public class GroupClient extends Client implements GroupClientInterface {
 		
 	 }
 	 
-	 public boolean createUser(String username, UserToken token)
+    public boolean createUser(String username, String password, UserToken token)
 	 {
 		 try
 			{
 				SecureEnvelope secureMessage = null, secureResponse = null;
 				ArrayList<Object> list = new ArrayList<Object>();
 				list.add(username);
+				list.add(password);
 				list.add(token);
 				secureMessage = makeSecureEnvelope("CUSER", list);
 				output.writeObject(secureMessage);

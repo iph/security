@@ -1,5 +1,11 @@
 /* This list represents the users on the server */
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.Security;
 import java.util.*;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 	public class UserList implements java.io.Serializable {
 		
@@ -7,9 +13,9 @@ import java.util.*;
 		
 		private HashMap<String, User> list = new HashMap<String, User>();
 		
-		public synchronized boolean addUser(String username)
+	    public synchronized boolean addUser(String username, String password)
 		{
-			User newUser = new User();
+			User newUser = new User(password);
 			// We want it to be null, that means there was no previous user, which is good and means nothing is broken.
 			return (list.put(username, newUser) == null);
 		}
@@ -20,10 +26,16 @@ import java.util.*;
 			return (list.remove(username) != null);
 		}
 		
-		public synchronized boolean checkUser(String username)
+	    public synchronized boolean checkUser(String username)
 		{
 			return list.containsKey(username);
 		}
+
+	    public synchronized boolean checkUserPassword(String username, String password){
+	    	System.out.println(list.containsKey(username));
+	    	System.out.println(list.get(username));
+	    	return list.containsKey(username) && list.get(username).checkPassword(password);
+	    }
 		
 		public synchronized HashSet<String> getUserGroups(String username)
 		{
@@ -70,8 +82,9 @@ import java.util.*;
 	
 	class User implements java.io.Serializable {
 		
-		private static final long serialVersionUID = -6699986336399821598L;
-		
+		private static final long serialVersionUID = -6699986336399821518L;
+		private String password;
+		private String salt;
 		private HashSet<String> groupSet;
 		private HashSet<String> ownershipSet;
 		
@@ -80,7 +93,27 @@ import java.util.*;
 			groupSet = new HashSet<String>();
 			ownershipSet = new HashSet<String>();
 		}
-		
+
+		public User(String password){
+		    this();
+			try{
+			    Security.addProvider(new BouncyCastleProvider());
+			    byte [] saltByte = new byte[32];
+			    SecureRandom rng = SecureRandom.getInstance("SHA1PRNG");
+			    rng.nextBytes(saltByte);
+			    salt = new String(saltByte);
+			    String saltedPassword = password + salt;
+			    MessageDigest mda = MessageDigest.getInstance("SHA-512", "BC");
+			    byte [] digest = mda.digest(saltedPassword.getBytes());
+			    this.password = new String(digest);
+			}
+			catch(Exception e){
+				e.printStackTrace();
+			}
+
+
+		}
+
 		public HashSet<String> getGroups()
 		{
 			return groupSet;
@@ -119,6 +152,26 @@ import java.util.*;
 			}
 			
 			return groupSet.remove(group);
+		}
+		public String toString(){
+			System.out.println(password);
+			return "";
+		}
+		
+		public boolean checkPassword(String plaintextPassword){
+		    Security.addProvider(new BouncyCastleProvider());
+			try {
+				
+			    String saltedPassword = plaintextPassword + salt;
+			    MessageDigest mda = MessageDigest.getInstance("SHA-512", "BC");
+			    byte [] digest = mda.digest(saltedPassword.getBytes());
+			    return this.password.equals(new String(digest));
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return false;
+			
 		}
 		
 	}

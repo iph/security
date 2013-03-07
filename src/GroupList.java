@@ -49,12 +49,12 @@ public class GroupList implements java.io.Serializable{
 	}
 	
 	public synchronized boolean removeOwner(String groupname, String user){
-		if ((list.containsKey(groupname)) && (list.get(groupname).isOwner(user))) {
-			return list.get(groupname).removeOwner(user);
-		}
-		else {
-			return false;
-		}
+	    if ((list.containsKey(groupname)) && (list.get(groupname).isOwner(user))) {
+		    return list.get(groupname).removeOwner(user);
+	    }
+	    else {
+		    return false;
+	    }
 	}
 
 	public synchronized boolean addMember(String groupname, String user){
