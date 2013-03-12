@@ -17,9 +17,7 @@ public class ClientApplication {
 	protected FileServerClientFrame fileClientFrame;
 	
 	// Custom variables
-	protected GroupClient gClient;
-	protected FileClient fClient;
-	protected UserToken myToken;
+	protected ClientController controller;
 
 	/**
 	 * Launch the application.
@@ -49,20 +47,16 @@ public class ClientApplication {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
+		// Initialize the controller.
+		controller = new ClientController();
+		
 		frame = new JFrame();
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
 				// To avoid connection resets.
-				if (fClient != null) {
-					if (fClient.isConnected()) {
-						fClient.secureDisconnect();
-					}
-				}
-				if (gClient != null) {
-					if (gClient.isConnected()) {
-						gClient.secureDisconnect();
-					}
+				if (controller != null) {
+					controller.disconnectGroupClient(); // Also disconnects any file client
 				}
 			}
 		});

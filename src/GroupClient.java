@@ -34,13 +34,13 @@ import org.bouncycastle.util.encoders.Hex;
 
 public class GroupClient extends Client implements GroupClientInterface {
 	
-	private X509Certificate cert;
-	private PublicKey publicKey;
-	private Key sessionKey;
+	protected X509Certificate cert;
+	protected PublicKey publicKey;
+	protected Key sessionKey;
 	//IvParameterSpec currentIV;
 	
-	public GroupClient(String inputServer, int inputPort) {
-		super(inputServer, inputPort);
+	public GroupClient(String inputServer, int inputPort, ClientController _cc) {
+		super(inputServer, inputPort, _cc);
 		publicKey = null;
 		cert = null;
 		
@@ -178,11 +178,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 		}
 	}
 
-	public UserToken getToken(String username, String password)
+	public Token getToken(String username, String password)
 	 {
 		try
 		{
-			UserToken token = null;
+			Token token = null;
 			//Envelope message = null, response = null;
 		 	SecureEnvelope message, response = null;
 			
@@ -211,7 +211,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 				
 				if(temp.size() == 1)
 				{
-					token = (UserToken)temp.get(0);
+					token = (Token)temp.get(0);
 					return token;
 				}
 			}

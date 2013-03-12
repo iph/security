@@ -28,8 +28,8 @@ public class FileClient extends Client implements FileClientInterface {
 	private Key sessionKey;
 	private String fingerprint;
 	
-	public FileClient(String inputServer, int inputPort) {
-		super(inputServer, inputPort);
+	public FileClient(String inputServer, int inputPort, ClientController _cc) {
+		super(inputServer, inputPort, _cc);
 		// TODO Auto-generated constructor stub
 	}
 	

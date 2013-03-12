@@ -12,6 +12,7 @@ public abstract class Client {
 	protected ObjectInputStream input;
 	protected String myServer;
 	protected int myPort;
+	protected ClientController my_cc;
 
 	public boolean connect(final String server, final int port) {
 		System.out.println("attempting to connect");
@@ -36,9 +37,10 @@ public abstract class Client {
 		return connect(myServer, myPort);
 	}
 	
-	public Client (String inputServer, int inputPort) {
+	public Client (String inputServer, int inputPort, ClientController _cc) {
 		myServer = inputServer;
 		myPort = inputPort;
+		my_cc = _cc;
 	}
 
 	public boolean isConnected() {

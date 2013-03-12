@@ -163,13 +163,12 @@ public class FileServerClientFrame extends JInternalFrame {
 
 	
 	private void disconnectAction() {
-		parentApp.fClient.secureDisconnect();
-		parentApp.fClient = null;
-		parentApp.fileClientFrame.setVisible(false);
+		parentApp.controller.disconnectFileClient();
+		setVisible(false);
 	}
 	
 	private boolean listFilesAction() {
-		List<String> tempList = parentApp.fClient.listFiles(parentApp.myToken);
+		List<String> tempList = parentApp.controller.listFiles();
 		
 		if ((tempList != null)) {
 			String[] tempArray = tempList.toArray(new String[tempList.size()]);
@@ -198,7 +197,7 @@ public class FileServerClientFrame extends JInternalFrame {
 				openFile = fileChooser.getSelectedFile();
 				sourceFile = openFile.getAbsolutePath();
 				destFile = openFile.getName(); 
-				if ((parentApp.fClient.upload(sourceFile, destFile, group, parentApp.myToken)) == true) {
+				if ((parentApp.controller.uploadFile(sourceFile, destFile, group)) == true) {
 					JOptionPane.showMessageDialog(this, "Upload success!");
 				}
 				else {
@@ -217,7 +216,7 @@ public class FileServerClientFrame extends JInternalFrame {
 			JOptionPane.showMessageDialog(this, "Select a file to delete!");
 		}
 		else {
-			if ((parentApp.fClient.delete(filename, parentApp.myToken)) == true) {
+			if ((parentApp.controller.deleteFile(filename)) == true) {
 				JOptionPane.showMessageDialog(this, "Delete success!");
 			}
 			else {
@@ -243,7 +242,7 @@ public class FileServerClientFrame extends JInternalFrame {
             if (returnValue == JFileChooser.APPROVE_OPTION) {
             	saveFile = saveChooser.getSelectedFile();
             	destFile = saveFile.getAbsolutePath();
-            	if ((parentApp.fClient.download(sourceFile, destFile, parentApp.myToken)) == true) {
+            	if ((parentApp.controller.downloadFile(sourceFile, destFile)) == true) {
     				JOptionPane.showMessageDialog(this, "Download success!");
     			}
     			else {
