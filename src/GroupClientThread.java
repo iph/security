@@ -1,5 +1,6 @@
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,53 +17,68 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class GroupClientThread extends Thread {
 	
-	private final Socket socket;
+	//private final Socket socket;
 	private GroupClient my_gc;
 	private ObjectOutputStream output;
 	private ObjectInputStream input;
 	
-	public GroupClientThread (Socket _socket, ObjectOutputStream _output, ObjectInputStream _input)
+	private volatile boolean proceed;
+	
+	public GroupClientThread (ObjectOutputStream _output, ObjectInputStream _input, GroupClient _gc)
 	{
-		socket = _socket;
+		my_gc = _gc;
 		output = _output;
 		input = _input;
+		proceed = true;
 	}
 	
-	public void run()
-	{
-		boolean proceed = true;
+	public void run() {
 		Security.addProvider(new BouncyCastleProvider());
 		
-		try
-		{
-			
-			do
-			{
-				SecureEnvelope secureMessage = (SecureEnvelope)input.readObject();
+		try {
+			do {
+				SecureEnvelope secureMessage = null;
+				try {
+					secureMessage = (SecureEnvelope)input.readObject();
+					System.out.println("GroupClientThread message received: " + secureMessage.getMessage());
+				} catch (EOFException e) {
+					System.out.println("Thread shutting down...");
+					break;
+				}
+				
 				SecureEnvelope secureResponse = null;
 				
-				System.out.println("GroupClientThread message received: " + secureMessage.getMessage());
-				
-				if(secureMessage.getMessage().equals("UPDATE-TOKEN")) // If the server is pushing an updated token
-				{
+				if ((secureMessage.getMessage().equals("OK")) || (secureMessage.getMessage().contains("FAIL"))) {
+					// If it is an OK or FAIL message, pass it to the main GroupClient thread via queue
+					my_gc.inputQueue.put(secureMessage);
+				}
+				else if(secureMessage.getMessage().equals("UPDATE-TOKEN")) { // If the server is pushing an updated token
 					ArrayList<Object> list = getDecryptedPayload(secureMessage);
 					if(list.size() == 1) {
+						updateToken((Token)list.get(0));
+						secureResponse = new SecureEnvelope("OK-TOKEN");
 					}
+					else {
+						secureResponse = new SecureEnvelope("FAIL-TOKEN"); // Bad new token
+					}
+					
+					output.writeObject(secureResponse);
 				}
-				else
-				{
-					secureResponse = new SecureEnvelope("FAIL"); //Server does not understand client request
+				else {
+					secureResponse = new SecureEnvelope("FAIL-UNKNOWN"); // Client does not understand server request
 					output.writeObject(secureResponse);
 				}
 			}while(proceed);	
 		}
-		catch(Exception e)
-		{
+		catch(Exception e) {
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
-		
-		
+	}
+	
+	// Update the token in the controller. Done by calling up to the GroupClient.
+	private boolean updateToken(Token _token) {
+		return my_gc.updateToken(_token);
 	}
 	
 	/* Crypto Related Methods

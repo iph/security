@@ -1,12 +1,24 @@
 import java.util.List;
 
-
+/**
+ * The ClientController is the layer between the clients and the interface that sits on top.
+ * It allows communication between the GroupClient and FileClient, holds the state of both, and maintains token information.
+ * This way the frontend/GUI/CLI is interchangeable, and the clients are access through a specific API, so to speak.
+ * 
+ * @author Matt and Sean
+ *
+ */
 public class ClientController {
-
+	// Hold the GroupClient state.
 	private GroupClient gClient;
+	// Hold the FileClient state.
 	private FileClient fClient;
+	// Hold the token information.
 	private Token token;
 	
+	/**
+	 * Default constructor. Set all fields to null.
+	 */
 	public ClientController() {
 		gClient = null;
 		fClient = null;
@@ -22,6 +34,23 @@ public class ClientController {
 			return false;
 		}
 		else {
+			return true;
+		}
+	}
+	
+	/**
+	 * Update the token in this controller.
+	 * This method should not be used for nullifying a token! Thus, null values are not accepted.
+	 * @param _token The token to update with.
+	 * @return True if the token was updated successfully, false if it was a null value.
+	 */
+	public boolean updateToken(Token _token) {
+		// Check to make sure a null value was not passed.
+		if (_token == null) {
+			return false;
+		}
+		else {
+			token = _token;
 			return true;
 		}
 	}
@@ -64,15 +93,16 @@ public class ClientController {
 	 * @return True if a token was obtained successfully, false if it was not.
 	 */
 	public boolean getToken (String username, String password) {
-		token = gClient.getToken(username, password);
+		// First verify no null values were passed
+		if ((username != null) && (password != null)) {
+			token = gClient.getToken(username, password);
+			if (token != null) {
+				System.out.println("Token received!\n" + token.toString());
+				return true;
+			}
+		}
 		
-		if (token != null) {
-			System.out.println("Token received!\n" + token.toString());
-			return true;
-		}
-		else {
-			return false;
-		}
+		return false;
 	}
 	
 	/**
@@ -200,7 +230,7 @@ public class ClientController {
 		
 		// First verify no null values were passed
 		if ((username != null) && (groupname != null)) {
-			userAdded = gClient.addUserToGroup(username, groupname, token);
+			userAdded = gClient.deleteUserFromGroup(username, groupname, token);
 		}
 		
 		return userAdded;
