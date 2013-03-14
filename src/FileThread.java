@@ -24,6 +24,8 @@ public class FileThread extends Thread
 	private final Socket socket;
 	private FileServer my_fs;
 	private Key sessionKey;
+	private int sequenceNumber;
+	private boolean tamperedConnection;
 
 	public FileThread(Socket _socket, FileServer _fs)
 	{
@@ -34,8 +36,7 @@ public class FileThread extends Thread
 	public void run()
 	{
 		boolean proceed = true;
-		try
-		{
+		try {
 			System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
 			final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
@@ -47,23 +48,19 @@ public class FileThread extends Thread
 			response.addObject(my_fs.publicKey);
 			output.writeObject(response);
 
-			do
-			{
+			do {
 				SecureEnvelope secureMessage = (SecureEnvelope)input.readObject();
-				System.out.println("Request received: " + secureMessage.getMessage());
+				SecureEnvelope secureResponse = null;
 				
-				SecureEnvelope secureResponse;
-				SecureEnvelope secureEnv = null;
-
-				// Handler to list files that this user is allowed to see
-				if(secureMessage.getMessage().equals("SESSIONINIT")) // Client wants to initialize a secure session
-				{
-					// ONLY USE UNSECURE ENVELOPE FOR RETURNING THE NONCE!!!
-					// NOWHERE ELSE!
-					if(secureMessage.getPayload() == null)
-					{
-						response = new Envelope("FAIL");
-						output.writeObject(response);
+				
+				// Only initializing the session uses a plaintext msg in the SecureEnvelope
+				if ((secureMessage.getMessage() != null) && (secureMessage.getMessage().equals("SESSIONINIT"))) {
+					System.out.println("Request received: " + secureMessage.getMessage());
+					
+					// If there is no payload
+					if(secureMessage.getPayload() == null) {
+						secureResponse = new SecureEnvelope("FAIL");
+						output.writeObject(secureResponse);
 					}
 					else {
 						// Get the list from the SecureEnvelope, false because it's NOT using the session key
@@ -74,278 +71,291 @@ public class FileThread extends Thread
 							sessionKey = (Key)objectList.get(0);
 							int nonce = (Integer)objectList.get(1);
 							nonce = nonce - 1; // nonce - 1 to return
-							response = new Envelope("OK");
-							response.addObject(nonce);
-							output.writeObject(response);
-							// Reset the input stream for a secure connection
 							
+							// Create a secure random number generator
+							SecureRandom rand = new SecureRandom();
+
+							// Get random int sequenceNumber and set it
+							sequenceNumber = rand.nextInt();
+							
+							ArrayList<Object> list = new ArrayList<Object>();
+							list.add(nonce);
+							
+							secureResponse = makeSecureEnvelope("OK", list);
+							
+							output.writeObject(secureResponse);
+						}
+						else {
+							secureResponse = new SecureEnvelope("FAIL");
+							output.writeObject(secureResponse);
 						}
 					}
 				}
-				else if(secureMessage.getMessage().equals("LFILES"))
-				{
-					// Need dat token
+				else {
+					ArrayList<Object> contents = getDecryptedPayload(secureMessage, true);
+					String msg = (String)contents.get(0);
 					
-					ArrayList<Object> list = getDecryptedPayload(secureMessage, true);
+					System.out.println("Request received: " + msg);
 					
-					if(list.size() < 1)
-					{
-						secureResponse = new SecureEnvelope("FAIL-BADCONTENTS");
-						output.writeObject(secureResponse);
+					if ((Integer)contents.get(1) == (sequenceNumber + 1)) {
+						sequenceNumber++;
 					}
 					else {
-						Token yourToken = (Token)list.get(0);
-						if (verifyToken(yourToken)) {
-							List<String> fileNames = new ArrayList<String>();
-							
-							// Add all files that you can touch.
-							for(ShareFile file: FileServer.fileList.getFiles()){
-		
-								//WE GOOD GUYS, DIS OUR FILE
-								if(yourToken.getGroups().contains(file.getGroup())){
-									fileNames.add(file.getPath());
-								}
-							}
-							
-							ArrayList<Object> tempList = new ArrayList<Object>();
-							tempList.add(fileNames);
-							secureResponse = makeSecureEnvelope("OK", tempList);
+						tamperedConnection = true;
+						System.out.println("CONNECTION TAMPERING DETECTED!");
+					}
+					
+					if(msg.equals("LFILES")) {
+						// Need dat token
+						if(contents.size() < 3) {
+							secureResponse = makeSecureEnvelope("FAIL-BADCONTENTS");
+							output.writeObject(secureResponse);
 						}
 						else {
-							secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
+							Token yourToken = (Token)contents.get(2);
+							if (verifyToken(yourToken)) {
+								List<String> fileNames = new ArrayList<String>();
+								
+								// Add all files that you can touch.
+								for(ShareFile file: FileServer.fileList.getFiles()){
+			
+									//WE GOOD GUYS, DIS OUR FILE
+									if(yourToken.getGroups().contains(file.getGroup())){
+										fileNames.add(file.getPath());
+									}
+								}
+								
+								ArrayList<Object> tempList = new ArrayList<Object>();
+								tempList.add(fileNames);
+								secureResponse = makeSecureEnvelope("OK", tempList);
+							}
+							else {
+								secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
+								System.out.println("User is trying to use a modified token!");
+							}
+							
+							output.writeObject(secureResponse);
+						}
+					}
+					if(msg.equals("UPLOADF")) {
+						if(contents.size() < 5) {
+							secureResponse = makeSecureEnvelope("FAIL-BADCONTENTS");
+						}
+						else {
+							if(contents.get(2) == null) {
+								secureResponse = makeSecureEnvelope("FAIL-BADPATH");
+							}
+							if(contents.get(3) == null) {
+								secureResponse = makeSecureEnvelope("FAIL-BADGROUP");
+							}
+							if(contents.get(4) == null) {
+								secureResponse = makeSecureEnvelope("FAIL-BADTOKEN");
+							}
+							else {
+								String remotePath = (String)contents.get(2);
+								String group = (String)contents.get(3);
+								Token yourToken = (Token)contents.get(4); //Extract token
+								
+								if (!verifyToken(yourToken)) {
+									secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
+								}
+								else if (FileServer.fileList.checkFile(remotePath)) {
+									System.out.printf("Error: file already exists at %s\n", remotePath);
+									secureResponse = makeSecureEnvelope("FAIL-FILEEXISTS"); //Success
+								}
+								else if (!yourToken.getGroups().contains(group)) {
+									System.out.printf("Error: user missing valid token for group %s\n", group);
+									secureResponse = makeSecureEnvelope("FAIL-UNAUTHORIZED"); //Success
+								}
+								else  {
+									File file = new File("shared_files/"+remotePath.replace('/', '_'));
+									file.createNewFile();
+									FileOutputStream fos = new FileOutputStream(file);
+									System.out.printf("Successfully created file %s\n", remotePath.replace('/', '_'));
+
+									secureResponse = makeSecureEnvelope("READY"); //Success
+									output.writeObject(secureResponse);
+
+									secureMessage = (SecureEnvelope)input.readObject();
+									contents = getDecryptedPayload(secureMessage, true);
+									msg = (String)contents.get(0);
+									
+									
+									while (msg.equals("CHUNK")) {
+										fos.write((byte[])contents.get(2), 0, (Integer)contents.get(3));
+										secureResponse = makeSecureEnvelope("READY"); // Success
+										output.writeObject(secureResponse);
+										// Read new SecureEnvelope
+										secureMessage = (SecureEnvelope)input.readObject();
+										contents = getDecryptedPayload(secureMessage, true);
+										msg = (String)contents.get(0);
+									}
+
+									if(msg.equals("EOF")) {
+										System.out.printf("Transfer successful file %s\n", remotePath);
+										FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath);
+										secureResponse = makeSecureEnvelope("OK"); // Success
+									}
+									else {
+										System.out.printf("Error reading file %s from client\n", remotePath);
+										secureResponse = makeSecureEnvelope("FAIL-ERROR-TRANSFER"); // Fail
+									}
+									fos.close();
+								}
+							}
+						}
+
+						output.writeObject(secureResponse);
+					}
+					else if (msg.compareTo("DOWNLOADF")==0) {
+						String remotePath = (String)contents.get(2);
+						Token t = (Token)contents.get(3);
+						if (!verifyToken(t)) {
+							secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
 							System.out.println("User is trying to use a modified token!");
+							output.writeObject(secureResponse);
+						}
+						else {
+							ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
+							if (sf == null) {
+								System.out.printf("Error: File %s doesn't exist\n", remotePath);
+								secureResponse = makeSecureEnvelope("FAIL-ERROR_FILEMISSING");
+								output.writeObject(secureResponse);
+		
+							}
+							else if (!t.getGroups().contains(sf.getGroup())){
+								System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
+								secureResponse = makeSecureEnvelope("FAIL-ERROR_PERMISSION");
+								output.writeObject(secureResponse);
+							}
+							else {
+								try {
+									File f = new File("shared_files/_"+remotePath.replace('/', '_'));
+									if (!f.exists()) {
+										System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
+										secureResponse = makeSecureEnvelope("FAIL-ERROR_NOTONDISK");
+										output.writeObject(secureResponse);
+			
+									}
+									else {
+										FileInputStream fis = new FileInputStream(f);
+			
+										do {
+											byte[] buf = new byte[4096];
+											if (msg.compareTo("DOWNLOADF")!=0) {
+												System.out.printf("Server error: %s\n", msg);
+												break;
+											}
+											
+											int n = fis.read(buf); //can throw an IOException
+											if (n > 0) {
+												System.out.printf(".");
+											} else if (n < 0) {
+												System.out.println("Read error");
+			
+											}
+											
+											ArrayList<Object> tempList = new ArrayList<Object>();
+											tempList.add(buf);
+											tempList.add(new Integer(n));
+											
+											secureResponse = makeSecureEnvelope("CHUNK", tempList);
+			
+											output.writeObject(secureResponse);
+			
+											secureMessage = (SecureEnvelope)input.readObject();
+											contents = getDecryptedPayload(secureMessage, true);
+											msg = (String)contents.get(0);
+			
+										}
+										while (fis.available()>0);
+			
+										//If server indicates success, return the member list
+										if(msg.equals("DOWNLOADF")) {
+											secureResponse = makeSecureEnvelope("EOF");
+											output.writeObject(secureResponse);
+			
+											secureMessage = (SecureEnvelope)input.readObject();
+											contents = getDecryptedPayload(secureMessage, true);
+											msg = (String)contents.get(0);
+											
+											if(msg.equals("OK")) {
+												System.out.printf("File data upload successful\n");
+											}
+											else {
+												System.out.printf("Upload failed: %s\n", secureMessage.getMessage());
+											}
+										}
+										else {
+											System.out.printf("Upload failed: %s\n", secureMessage.getMessage());
+										}
+										fis.close();
+									}
+								}
+								catch(Exception e1)
+								{
+									System.err.println("Error: " + e1.getMessage());
+									e1.printStackTrace(System.err);
+		
+								}
+							}
+						}
+					}
+					else if (msg.equals("DELETEF")) {
+						String remotePath = (String)contents.get(2);
+						Token t = (Token)contents.get(3);
+						
+						if (!verifyToken(t)) {
+							System.out.println("User is trying to use a modified token!");
+							secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
+						}
+						else {
+							ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
+							if (sf == null) {
+								System.out.printf("Error: File %s doesn't exist\n", remotePath);
+								secureResponse = makeSecureEnvelope("FAIL-ERROR_DOESNTEXIST");
+							}
+							else if (!t.getGroups().contains(sf.getGroup())){
+								System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
+								secureResponse = makeSecureEnvelope("FAIL-ERROR_PERMISSION");
+							}
+							else {
+								try
+								{
+									File f = new File("shared_files/"+"_"+remotePath.replace('/', '_'));
+		
+									if (!f.exists()) {
+										System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
+										secureResponse = makeSecureEnvelope("FAIL-ERROR_FILEMISSING");
+									}
+									else if (f.delete()) {
+										System.out.printf("File %s deleted from disk\n", "_"+remotePath.replace('/', '_'));
+										FileServer.fileList.removeFile("/"+remotePath);
+										secureResponse = makeSecureEnvelope("OK");
+									}
+									else {
+										System.out.printf("Error deleting file %s from disk\n", "_"+remotePath.replace('/', '_'));
+										secureResponse = makeSecureEnvelope("FAIL-ERROR_DELETE");
+									}
+		
+		
+								}
+								catch(Exception e1) {
+									System.err.println("Error: " + e1.getMessage());
+									e1.printStackTrace(System.err);
+									secureResponse = makeSecureEnvelope("FAIL-UNKNOWN");
+								}
+							}
 						}
 						
 						output.writeObject(secureResponse);
+						
 					}
-				}
-				if(secureMessage.getMessage().equals("UPLOADF"))
-				{
-					
-					ArrayList<Object> list = getDecryptedPayload(secureMessage, true);
-
-					if(list.size() < 3)
+					else if(msg.equals("DISCONNECT"))
 					{
-						secureResponse = new SecureEnvelope("FAIL-BADCONTENTS");
+						socket.close();
+						proceed = false;
 					}
-					else
-					{
-						if(list.get(0) == null) {
-							secureResponse = new SecureEnvelope("FAIL-BADPATH");
-						}
-						if(list.get(1) == null) {
-							secureResponse = new SecureEnvelope("FAIL-BADGROUP");
-						}
-						if(list.get(2) == null) {
-							secureResponse = new SecureEnvelope("FAIL-BADTOKEN");
-						}
-						else {
-							String remotePath = (String)list.get(0);
-							String group = (String)list.get(1);
-							Token yourToken = (Token)list.get(2); //Extract token
-							
-							if (!verifyToken(yourToken)) {
-								secureResponse = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
-							}
-							else if (FileServer.fileList.checkFile(remotePath)) {
-								System.out.printf("Error: file already exists at %s\n", remotePath);
-								secureResponse = new SecureEnvelope("FAIL-FILEEXISTS"); //Success
-							}
-							else if (!yourToken.getGroups().contains(group)) {
-								System.out.printf("Error: user missing valid token for group %s\n", group);
-								secureResponse = new SecureEnvelope("FAIL-UNAUTHORIZED"); //Success
-							}
-							else  {
-								File file = new File("shared_files/"+remotePath.replace('/', '_'));
-								file.createNewFile();
-								FileOutputStream fos = new FileOutputStream(file);
-								System.out.printf("Successfully created file %s\n", remotePath.replace('/', '_'));
-
-								secureResponse = new SecureEnvelope("READY"); //Success
-								output.writeObject(secureResponse);
-
-								secureMessage = (SecureEnvelope)input.readObject();
-								while (secureMessage.getMessage().compareTo("CHUNK")==0) {
-									// Get new secureMessage contents
-									list = getDecryptedPayload(secureMessage, true);
-									
-									fos.write((byte[])list.get(0), 0, (Integer)list.get(1));
-									secureResponse = new SecureEnvelope("READY"); //Success
-									output.writeObject(secureResponse);
-									secureMessage = (SecureEnvelope)input.readObject();
-								}
-
-								if(secureMessage.getMessage().compareTo("EOF")==0) {
-									System.out.printf("Transfer successful file %s\n", remotePath);
-									FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath);
-									secureResponse = new SecureEnvelope("OK"); //Success
-								}
-								else {
-									System.out.printf("Error reading file %s from client\n", remotePath);
-									secureResponse = new SecureEnvelope("ERROR-TRANSFER"); //Success
-								}
-								fos.close();
-							}
-						}
-					}
-
-					output.writeObject(secureResponse);
-				}
-				else if (secureMessage.getMessage().compareTo("DOWNLOADF")==0) {
-					
-					ArrayList<Object> list = getDecryptedPayload(secureMessage, true);
-					
-					String remotePath = (String)list.get(0);
-					Token t = (Token)list.get(1);
-					if (!verifyToken(t)) {
-						secureEnv = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
-						System.out.println("User is trying to use a modified token!");
-						output.writeObject(secureEnv);
-					}
-					else {
-						ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
-						if (sf == null) {
-							System.out.printf("Error: File %s doesn't exist\n", remotePath);
-							secureEnv = new SecureEnvelope("ERROR_FILEMISSING");
-							output.writeObject(secureEnv);
-	
-						}
-						else if (!t.getGroups().contains(sf.getGroup())){
-							System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
-							secureEnv = new SecureEnvelope("ERROR_PERMISSION");
-							output.writeObject(secureEnv);
-						}
-						else {
-	
-							try
-							{
-								File f = new File("shared_files/_"+remotePath.replace('/', '_'));
-								if (!f.exists()) {
-									System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
-									secureEnv = new SecureEnvelope("ERROR_NOTONDISK");
-									output.writeObject(secureEnv);
-		
-								}
-								else {
-									FileInputStream fis = new FileInputStream(f);
-		
-									do {
-										byte[] buf = new byte[4096];
-										if (secureMessage.getMessage().compareTo("DOWNLOADF")!=0) {
-											System.out.printf("Server error: %s\n", secureMessage.getMessage());
-											break;
-										}
-										int n = fis.read(buf); //can throw an IOException
-										if (n > 0) {
-											System.out.printf(".");
-										} else if (n < 0) {
-											System.out.println("Read error");
-		
-										}
-										
-										ArrayList<Object> tempList = new ArrayList<Object>();
-										tempList.add(buf);
-										tempList.add(new Integer(n));
-										
-										secureEnv = makeSecureEnvelope("CHUNK", tempList);
-		
-										output.writeObject(secureEnv);
-		
-										secureMessage = (SecureEnvelope)input.readObject();
-		
-		
-									}
-									while (fis.available()>0);
-		
-									//If server indicates success, return the member list
-									if(secureMessage.getMessage().compareTo("DOWNLOADF")==0)
-									{
-										secureEnv = new SecureEnvelope("EOF");
-										output.writeObject(secureEnv);
-		
-										secureEnv = (SecureEnvelope)input.readObject();
-										if(secureEnv.getMessage().compareTo("OK")==0) {
-											System.out.printf("File data upload successful\n");
-										}
-										else {
-											System.out.printf("Upload failed: %s\n", secureEnv.getMessage());
-										}
-									}
-									else {
-		
-										System.out.printf("Upload failed: %s\n", secureEnv.getMessage());
-		
-									}
-									fis.close();
-								}
-							}
-							catch(Exception e1)
-							{
-								System.err.println("Error: " + e1.getMessage());
-								e1.printStackTrace(System.err);
-	
-							}
-						}
-					}
-				}
-				else if (secureMessage.getMessage().compareTo("DELETEF")==0) {
-
-					ArrayList<Object> list = getDecryptedPayload(secureMessage, true);
-					
-					String remotePath = (String)list.get(0);
-					Token t = (Token)list.get(1);
-					
-					if (!verifyToken(t)) {
-						System.out.println("User is trying to use a modified token!");
-						secureEnv = new SecureEnvelope("FAIL-MODIFIEDTOKEN");
-					}
-					else {
-						ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
-						if (sf == null) {
-							System.out.printf("Error: File %s doesn't exist\n", remotePath);
-							secureEnv = new SecureEnvelope("ERROR_DOESNTEXIST");
-						}
-						else if (!t.getGroups().contains(sf.getGroup())){
-							System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
-							secureEnv = new SecureEnvelope("ERROR_PERMISSION");
-						}
-						else {
-							try
-							{
-								File f = new File("shared_files/"+"_"+remotePath.replace('/', '_'));
-	
-								if (!f.exists()) {
-									System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
-									secureEnv = new SecureEnvelope("ERROR_FILEMISSING");
-								}
-								else if (f.delete()) {
-									System.out.printf("File %s deleted from disk\n", "_"+remotePath.replace('/', '_'));
-									FileServer.fileList.removeFile("/"+remotePath);
-									secureEnv = new SecureEnvelope("OK");
-								}
-								else {
-									System.out.printf("Error deleting file %s from disk\n", "_"+remotePath.replace('/', '_'));
-									secureEnv = new SecureEnvelope("ERROR_DELETE");
-								}
-	
-	
-							}
-							catch(Exception e1)
-							{
-								System.err.println("Error: " + e1.getMessage());
-								e1.printStackTrace(System.err);
-								secureEnv = new SecureEnvelope(e1.getMessage());
-							}
-						}
-					}
-					
-					output.writeObject(secureEnv);
-					
-				}
-				else if(secureMessage.getMessage().equals("DISCONNECT"))
-				{
-					socket.close();
-					proceed = false;
 				}
 			} while(proceed);
 		}
@@ -362,9 +372,14 @@ public class FileThread extends Thread
 	 * 
 	 */
 	
-	private SecureEnvelope makeSecureEnvelope(String msg, ArrayList<Object> list) {
+	protected SecureEnvelope makeSecureEnvelope(String msg) {
+		ArrayList<Object> list = new ArrayList<Object>();
+		return makeSecureEnvelope(msg, list);
+	}
+	 
+	protected SecureEnvelope makeSecureEnvelope(String msg, ArrayList<Object> list) {
 		// Make a new envelope
-		SecureEnvelope envelope = new SecureEnvelope(msg);
+		SecureEnvelope envelope = new SecureEnvelope();
 		
 		// Create new ivSpec
 		IvParameterSpec ivSpec = new IvParameterSpec(new byte[16]);
@@ -372,11 +387,17 @@ public class FileThread extends Thread
 		// Set the ivSpec in the envelope
 		envelope.setIV(ivSpec.getIV());
 		
+		// Increment the sequenceNumber
+		sequenceNumber++;
+		
+		// Add the msg and sequenceNumber to the list
+		list.add(0, sequenceNumber);
+		list.add(0, msg);
+		
 		// Set the payload using the encrypted ArrayList
 		envelope.setPayload(encryptPayload(listToByteArray(list), true, ivSpec));
 		
 		return envelope;
-		
 	}
 	
 	private byte[] encryptPayload(byte[] plainText, boolean useSessionKey, IvParameterSpec ivSpec) {

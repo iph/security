@@ -15,6 +15,12 @@ public class SecureEnvelope extends Envelope {
 		ivSpec = null;
 	}
 	
+	public SecureEnvelope() {
+		super();
+		payload = null;
+		ivSpec = null;
+	}
+	
 	public void setPayload(byte[] _payload) {
 		payload = Arrays.copyOf(_payload, _payload.length);
 	}

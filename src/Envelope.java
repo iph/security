@@ -15,6 +15,10 @@ public class Envelope implements java.io.Serializable {
 		msg = text;
 	}
 	
+	public Envelope() {
+		msg = null;
+	}
+	
 	public String getMessage()
 	{
 		return msg;

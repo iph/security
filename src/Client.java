@@ -25,6 +25,9 @@ public abstract class Client {
 	protected ClientController controller;
 	protected Key sessionKey;
 	protected PublicKey publicKey;
+	
+	protected int sequenceNumber;
+	protected boolean tamperedConnection;
 
 	public boolean connect(final String server, final int port) {
 		System.out.println("attempting to connect");
@@ -83,7 +86,8 @@ public abstract class Client {
 		if (isConnected()) {
 			try
 			{
-				SecureEnvelope secureMessage = new SecureEnvelope("DISCONNECT");
+				//SecureEnvelope secureMessage = new SecureEnvelope("DISCONNECT");
+				SecureEnvelope secureMessage = makeSecureEnvelope("DISCONNECT");
 				output.writeObject(secureMessage);
 			}
 			catch(Exception e)
@@ -100,22 +104,34 @@ public abstract class Client {
 	 * These methods will abstract the whole secure session process.
 	 * 
 	 */
+	
+	// Wrap the other makeSecureEnvelope message by passing an empty list
+	protected SecureEnvelope makeSecureEnvelope(String msg) {
+		ArrayList<Object> list = new ArrayList<Object>();
+		return makeSecureEnvelope(msg, list);
+	}
 	 
 	protected SecureEnvelope makeSecureEnvelope(String msg, ArrayList<Object> list) {
 		// Make a new envelope
-	SecureEnvelope envelope = new SecureEnvelope(msg);
-	
-	// Create new ivSpec
-	IvParameterSpec ivSpec = new IvParameterSpec(new byte[16]);
-	
-	// Set the ivSpec in the envelope
-	envelope.setIV(ivSpec.getIV());
-	
-	// Set the payload using the encrypted ArrayList
+		SecureEnvelope envelope = new SecureEnvelope();
+		
+		// Create new ivSpec
+		IvParameterSpec ivSpec = new IvParameterSpec(new byte[16]);
+		
+		// Set the ivSpec in the envelope
+		envelope.setIV(ivSpec.getIV());
+		
+		// Increment the sequenceNumber
+		sequenceNumber++;
+		
+		// Add the msg and sequenceNumber to the list
+		list.add(0, sequenceNumber);
+		list.add(0, msg);
+		
+		// Set the payload using the encrypted ArrayList
 		envelope.setPayload(encryptPayload(listToByteArray(list), true, ivSpec));
 		
 		return envelope;
-		
 	}
 	
 	protected byte[] encryptPayload(byte[] plainText, boolean useSessionKey, IvParameterSpec ivSpec) {

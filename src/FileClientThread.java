@@ -13,16 +13,16 @@ import javax.crypto.spec.IvParameterSpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-public class GroupClientThread extends Thread {
-	private GroupClient my_gc;
+public class FileClientThread extends Thread {
+	private FileClient my_fc;
 	private ObjectOutputStream output;
 	private ObjectInputStream input;
 	
 	private volatile boolean proceed;
 	
-	public GroupClientThread (ObjectOutputStream _output, ObjectInputStream _input, GroupClient _gc)
+	public FileClientThread (ObjectOutputStream _output, ObjectInputStream _input, FileClient _fc)
 	{
-		my_gc = _gc;
+		my_fc = _fc;
 		output = _output;
 		input = _input;
 		proceed = true;
@@ -40,55 +40,42 @@ public class GroupClientThread extends Thread {
 					secureMessage = (SecureEnvelope)input.readObject();
 					contents = getDecryptedPayload(secureMessage);
 					msg = (String)contents.get(0);
-					System.out.println("GroupClientThread message received: " + msg);
+					System.out.println("FileClientThread message received: " + msg);
 				} catch (EOFException e) {
 					System.out.println("Thread shutting down...");
 					break;
 				}
 				
-				SecureEnvelope secureResponse = null;
-				
-				if ((Integer)contents.get(1) == (my_gc.sequenceNumber + 1)) {
-					my_gc.sequenceNumber++;
+				if ((Integer)contents.get(1) == (my_fc.sequenceNumber + 1)) {
+					my_fc.sequenceNumber++;
 				}
 				else {
-					my_gc.tamperedConnection = true;
+					my_fc.tamperedConnection = true;
 					System.out.println("CONNECTION TAMPERING DETECTED!");
 				}
 				
+				// Put the contents in the queue.
+				my_fc.inputQueue.put(contents);
+				
+				/* This isn't needed most likely.
+				 * There probably won't be a case where the file server pushes to the client without a request.
+				SecureEnvelope secureResponse = null;
+				
 				if ((msg.equals("OK")) || (msg.contains("FAIL"))) {
-					// If it is an OK or FAIL message, pass it to the main GroupClient thread via queue
-					my_gc.inputQueue.put(contents);
-				}
-				else if(msg.equals("UPDATE-TOKEN")) { // If the server is pushing an updated token
-					if(contents.size() == 3) {
-						updateToken((Token)contents.get(0));
-						//secureResponse = new SecureEnvelope("OK-TOKEN");
-						secureResponse = makeSecureEnvelope("OK-TOKEN");
-					}
-					else {
-						//secureResponse = new SecureEnvelope("FAIL-TOKEN");
-						secureResponse = makeSecureEnvelope("FAIL-TOKEN"); // Bad new token
-					}
-					
-					output.writeObject(secureResponse);
+					// If it is an OK or FAIL message, pass it to the main FileClient thread via queue
+					my_fc.inputQueue.put(contents);
 				}
 				else {
-					//secureResponse = new SecureEnvelope("FAIL-UNKNOWN");
 					secureResponse = makeSecureEnvelope("FAIL-UNKNOWN"); // Client does not understand server request
 					output.writeObject(secureResponse);
 				}
+				*/
 			}while(proceed);	
 		}
 		catch(Exception e) {
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
-	}
-	
-	// Update the token in the controller. Done by calling up to the GroupClient.
-	private boolean updateToken(Token _token) {
-		return my_gc.updateToken(_token);
 	}
 	
 	/* Crypto Related Methods
@@ -114,10 +101,10 @@ public class GroupClientThread extends Thread {
 		envelope.setIV(ivSpec.getIV());
 		
 		// Increment the sequenceNumber
-		my_gc.sequenceNumber++;
+		my_fc.sequenceNumber++;
 		
 		// Add the msg and sequenceNumber to the list
-		list.add(0, my_gc.sequenceNumber);
+		list.add(0, my_fc.sequenceNumber);
 		list.add(0, msg);
 		
 		// Set the payload using the encrypted ArrayList
@@ -134,7 +121,7 @@ public class GroupClientThread extends Thread {
 			// TODO
 			try {
 				inCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
-				inCipher.init(Cipher.ENCRYPT_MODE, my_gc.sessionKey, ivSpec);
+				inCipher.init(Cipher.ENCRYPT_MODE, my_fc.sessionKey, ivSpec);
 				cipherText = inCipher.doFinal(plainText);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -144,7 +131,7 @@ public class GroupClientThread extends Thread {
 		else { // Use public key RSA
 			try {
 				inCipher = Cipher.getInstance("RSA", "BC");
-				inCipher.init(Cipher.ENCRYPT_MODE, my_gc.publicKey, new SecureRandom());
+				inCipher.init(Cipher.ENCRYPT_MODE, my_fc.publicKey, new SecureRandom());
 				System.out.println("plainText length: " + plainText.length);
 				cipherText = inCipher.doFinal(plainText);
 			} catch (Exception e) {
@@ -167,7 +154,7 @@ public class GroupClientThread extends Thread {
 		
 		try {
 			outCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
-			outCipher.init(Cipher.DECRYPT_MODE, my_gc.sessionKey, ivSpec);
+			outCipher.init(Cipher.DECRYPT_MODE, my_fc.sessionKey, ivSpec);
 			plainText = outCipher.doFinal(cipherText);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
