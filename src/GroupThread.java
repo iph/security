@@ -29,11 +29,19 @@ public class GroupThread extends Thread
 	private Key sessionKey;
 	private int sequenceNumber;
 	private boolean tamperedConnection;
+	private boolean tamperedToken;
+	private final int threadID;
 	
 	public GroupThread(Socket _socket, GroupServer _gs)
 	{
 		socket = _socket;
 		my_gs = _gs;
+		
+		// Create a secure random number generator
+		SecureRandom rand = new SecureRandom();
+
+		// Get random int and set the threadID for later use
+		threadID = rand.nextInt();
 	}
 	
 	public void run()
@@ -159,21 +167,19 @@ public class GroupThread extends Thread
 							
 							if(contents.get(2) != null && contents.get(3) != null && contents.get(4) != null)
 							{
-								    String username = (String)contents.get(2); //Extract the username
-								    String password = (String)contents.get(3);
-								    Token yourToken = (Token)contents.get(4); //Extract the token
+							    String username = (String)contents.get(2); //Extract the username
+							    String password = (String)contents.get(3);
+							    Token yourToken = (Token)contents.get(4); //Extract the token
 
-								    System.out.println("Create user: " + username + ", password: " + password);
-								    if (!verifyToken(yourToken)) {
-									    secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
-								    }
-								    else
-								    {
-									if(createUser(username, password, yourToken))
-									{
-										secureResponse = makeSecureEnvelope("OK"); //Success
+							    System.out.println("Create user: " + username + ", password: " + password);
+							    if (!verifyToken(yourToken)) {
+								    secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
+							    }
+							    else {
+							    	if(createUser(username, password, yourToken)) {
+									secureResponse = makeSecureEnvelope("OK"); //Success
 									}
-								    }
+							    }
 							}
 						}
 						
@@ -404,13 +410,13 @@ public class GroupThread extends Thread
 	private UserToken createToken(String username, String password) 
 	{
 		//Check that user exists
-		// TODO: Checking password
 		System.out.println(password);
 		if(my_gs.userList.checkUserPassword(username, password))
 		{
 			//Issue a new token with server's name, user's name, and user's groups
 			// Now adding a signature as well
-			UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
+			// Phase4: Including threadID now :)
+			UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username), threadID);
 			
 			byte[] tokenBytes = yourToken.toByteArray();
 			byte[] signedTokenBytes = signBytes(tokenBytes);
@@ -631,7 +637,6 @@ public class GroupThread extends Thread
 		Cipher inCipher;
 		
 		if (useSessionKey) {
-			// TODO
 			try {
 				inCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
 				inCipher.init(Cipher.ENCRYPT_MODE, sessionKey, ivSpec);
@@ -739,16 +744,28 @@ public class GroupThread extends Thread
 		
 		System.out.println("Verifying token...");
 		
-		try {
-			sig = Signature.getInstance("SHA512WithRSAEncryption", "BC");
-			sig.initVerify(my_gs.publicKey);
-			sig.update(tokenBytes);
-			verified = sig.verify(sigBytes);
-		} catch (Exception e) {
-			e.printStackTrace();
+		if (token.getThreadID() == threadID) {
+			
+			try {
+				sig = Signature.getInstance("SHA512WithRSAEncryption", "BC");
+				sig.initVerify(my_gs.publicKey);
+				sig.update(tokenBytes);
+				verified = sig.verify(sigBytes);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			if (!verified) {
+				tamperedToken = true;
+				System.out.println("Token tampered with!");
+			}
+			System.out.println("Token verified? " + verified);
+			
 		}
-		
-		System.out.println("Token verified: " + verified);
+		else {
+			System.out.println("Wrong token!");
+			verified = false;
+		}
 		
 		return verified;
 	}

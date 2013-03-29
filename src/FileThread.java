@@ -26,11 +26,18 @@ public class FileThread extends Thread
 	private Key sessionKey;
 	private int sequenceNumber;
 	private boolean tamperedConnection;
+	private final int threadID;
 
 	public FileThread(Socket _socket, FileServer _fs)
 	{
 		socket = _socket;
 		my_fs = _fs;
+		
+		// Create a secure random number generator
+		SecureRandom rand = new SecureRandom();
+
+		// Get random int and set the threadID for later use
+		threadID = rand.nextInt();
 	}
 
 	public void run()

@@ -6,6 +6,7 @@ import java.util.*;
 public class Token implements UserToken, Serializable {
 	private static final long serialVersionUID = 1337L;
 	private String issuer, subject;
+	private int threadID;
 	private HashSet<String> groups;
 	private byte[] signature;
 
@@ -15,13 +16,22 @@ public class Token implements UserToken, Serializable {
 		groups = groups_;
 	}
 
-	public Token(String issuer_, String subject_, HashSet<String> groups_, byte[] signature_) {
+	//public Token(String issuer_, String subject_, HashSet<String> groups_, byte[] signature_) {
+	//	this(issuer_, subject_, groups_);
+	//	signature = Arrays.copyOf(signature_, signature_.length);
+	//}
+	
+	public Token(String issuer_, String subject_, HashSet<String> groups_, int threadID_) {
 		this(issuer_, subject_, groups_);
-		signature = Arrays.copyOf(signature_, signature_.length);
+		threadID = threadID_;
 	}
 
 	public String getIssuer() {
 		return issuer;
+	}
+	
+	public int getThreadID() {
+		return threadID;
 	}
 
 	public void setSignature(byte[] signature_) {
@@ -42,6 +52,7 @@ public class Token implements UserToken, Serializable {
 			out.writeObject(issuer);
 			out.writeObject(subject);
 			out.writeObject(groups);
+			out.writeObject(threadID);
 			returnBytes = bos.toByteArray();
 			out.close();
 			bos.close();
