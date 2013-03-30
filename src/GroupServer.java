@@ -25,6 +25,7 @@ public class GroupServer extends Server {
 	public GroupList groupList;
 	public PrivateKey privateKey;
 	public PublicKey publicKey;
+	protected ArrayList<byte[]> masterKeyList;
     
 	public GroupServer() {
 		super(SERVER_PORT, "ALPHA");
@@ -108,6 +109,11 @@ public class GroupServer extends Server {
 			System.out.println("Imported the private key: " + new String(Hex.encode(privateKey.getEncoded())));
 		}
 		
+		// Load the master file keys
+		if(!loadKeys()) {
+			// Just in case, if there is no key file, use the MasterKeyManger's public method to create one!
+			MasterKeyManager.addKeyExternal();
+		}
 		
 		//Open user file to get user list
 		try
@@ -148,8 +154,9 @@ public class GroupServer extends Server {
 				System.err.println("Error: " + e.getMessage());
 				e.printStackTrace(System.err);
 			}
-
-
+			
+			
+			
 		}
 		catch(IOException e)
 		{
@@ -213,6 +220,28 @@ public class GroupServer extends Server {
 			e.printStackTrace(System.err);
 		}
 
+	}
+	
+	private boolean loadKeys() {
+		String keyFile = "MasterKeyList.bin";
+		boolean returnValue = false;
+		
+		FileInputStream fis;
+		
+		try {
+			fis = new FileInputStream(keyFile);
+			ObjectInputStream keyStream = new ObjectInputStream(fis);
+			masterKeyList = (ArrayList<byte[]>)keyStream.readObject();
+			fis.close();
+			returnValue = true;
+		} catch (FileNotFoundException e) {
+			System.out.println("There is no key file yet!");
+		} catch (Exception e) {
+			System.out.println("keyFile issue!");
+			e.printStackTrace();
+		}
+		
+		return returnValue;
 	}
 	
 }
