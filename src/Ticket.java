@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 /**
  * The Ticket is an access token specific to file servers. It is given out upon connecting to a file server.
- * A ticket is specific to a file server session (aka a specific thread) and thus cannot be used outside of that session.
+ * A ticket is specific to a file server session (aka a specific thread) and thus cannot be used outside of that session. 
  * A Ticket MUST be used with a proper Token to perform actions on a file server.
  * @author Matt
  *
