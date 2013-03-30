@@ -17,9 +17,10 @@ import org.bouncycastle.util.encoders.Base64;
 
 public class FileClient extends Client implements FileClientInterface {
 
-	private String fingerprint;
+	private String fingerprint; // Printable version of FS's public key :)
 	protected FileClientThread fcThread;
 	protected ArrayBlockingQueue<Object> inputQueue;
+	protected Ticket myTicket;
 	
 	public FileClient(String inputServer, int inputPort, ClientController _cc) {
 		super(inputServer, inputPort, _cc);
@@ -63,10 +64,12 @@ public class FileClient extends Client implements FileClientInterface {
 				// Successful response
 				if (((String)(tempList.get(0))).equals("OK")) {
 					// If there is a return nonce in the Envelope, return it
-					if (tempList.size() == 3) {
+					if (tempList.size() == 4) {
 						int returnNonce = (Integer) tempList.get(2);
 						// Grab the sequenceNumber from the message as well
 						sequenceNumber = (Integer)tempList.get(1);
+						// Get the Ticket from the message
+						myTicket = (Ticket)tempList.get(3);
 						return returnNonce;
 					}
 				}
@@ -180,6 +183,7 @@ public class FileClient extends Client implements FileClientInterface {
 		ArrayList<Object> list = new ArrayList<Object>();
 		list.add(remotePath);
 		list.add(token);
+		list.add(myTicket);
 		secureMessage = makeSecureEnvelope("DELETEF", list);
 	    
 	    try {
@@ -221,6 +225,7 @@ public class FileClient extends Client implements FileClientInterface {
 				ArrayList<Object> list = new ArrayList<Object>();
 				list.add(sourceFile);
 				list.add(token);
+				list.add(myTicket);
 				secureMessage = makeSecureEnvelope("DOWNLOADF", list);
 				
 				output.writeObject(secureMessage);
@@ -271,6 +276,7 @@ public class FileClient extends Client implements FileClientInterface {
 		try {
 			ArrayList<Object> list = new ArrayList<Object>();
 			list.add(token);
+			list.add(myTicket);
 			secureMessage = makeSecureEnvelope("LFILES", list);
 
 			output.writeObject(secureMessage);
@@ -303,6 +309,7 @@ public class FileClient extends Client implements FileClientInterface {
 			list.add(destFile);
 			list.add(group);
 			list.add(token);
+			list.add(myTicket);
 			secureMessage = makeSecureEnvelope("UPLOADF", list);
 
 			output.writeObject(secureMessage);

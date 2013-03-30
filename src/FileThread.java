@@ -26,6 +26,8 @@ public class FileThread extends Thread
 	private Key sessionKey;
 	private int sequenceNumber;
 	private boolean tamperedConnection;
+	private boolean tamperedToken;
+	private boolean tamperedTicket;
 	private final int threadID;
 
 	public FileThread(Socket _socket, FileServer _fs)
@@ -88,6 +90,10 @@ public class FileThread extends Thread
 							ArrayList<Object> list = new ArrayList<Object>();
 							list.add(nonce);
 							
+							// Create a new Ticket for this session, and add it to the message
+							Ticket yourTicket = createTicket();
+							list.add(yourTicket);
+							
 							secureResponse = makeSecureEnvelope("OK", list);
 							
 							output.writeObject(secureResponse);
@@ -114,27 +120,34 @@ public class FileThread extends Thread
 					
 					if(msg.equals("LFILES")) {
 						// Need dat token
-						if(contents.size() < 3) {
+						if(contents.size() < 4) {
 							secureResponse = makeSecureEnvelope("FAIL-BADCONTENTS");
 							output.writeObject(secureResponse);
 						}
 						else {
 							Token yourToken = (Token)contents.get(2);
+							Ticket yourTicket = (Ticket)contents.get(3);
 							if (verifyToken(yourToken)) {
-								List<String> fileNames = new ArrayList<String>();
-								
-								// Add all files that you can touch.
-								for(ShareFile file: FileServer.fileList.getFiles()){
-			
-									//WE GOOD GUYS, DIS OUR FILE
-									if(yourToken.getGroups().contains(file.getGroup())){
-										fileNames.add(file.getPath());
+								if (verifyTicket(yourTicket)) {
+									List<String> fileNames = new ArrayList<String>();
+									
+									// Add all files that you can touch.
+									for(ShareFile file: FileServer.fileList.getFiles()){
+				
+										//WE GOOD GUYS, DIS OUR FILE
+										if(yourToken.getGroups().contains(file.getGroup())){
+											fileNames.add(file.getPath());
+										}
 									}
+									
+									ArrayList<Object> tempList = new ArrayList<Object>();
+									tempList.add(fileNames);
+									secureResponse = makeSecureEnvelope("OK", tempList);
 								}
-								
-								ArrayList<Object> tempList = new ArrayList<Object>();
-								tempList.add(fileNames);
-								secureResponse = makeSecureEnvelope("OK", tempList);
+								else {
+									secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTICKET");
+									System.out.println("User is trying to use a modified ticket!");
+								}
 							}
 							else {
 								secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
@@ -145,26 +158,33 @@ public class FileThread extends Thread
 						}
 					}
 					if(msg.equals("UPLOADF")) {
-						if(contents.size() < 5) {
+						if(contents.size() < 6) {
 							secureResponse = makeSecureEnvelope("FAIL-BADCONTENTS");
 						}
 						else {
 							if(contents.get(2) == null) {
 								secureResponse = makeSecureEnvelope("FAIL-BADPATH");
 							}
-							if(contents.get(3) == null) {
+							else if(contents.get(3) == null) {
 								secureResponse = makeSecureEnvelope("FAIL-BADGROUP");
 							}
-							if(contents.get(4) == null) {
+							else if(contents.get(4) == null) {
 								secureResponse = makeSecureEnvelope("FAIL-BADTOKEN");
+							}
+							else if (contents.get(5) == null) {
+								secureResponse = makeSecureEnvelope("FAIL-BADTICKET");
 							}
 							else {
 								String remotePath = (String)contents.get(2);
 								String group = (String)contents.get(3);
-								Token yourToken = (Token)contents.get(4); //Extract token
+								Token yourToken = (Token)contents.get(4); // Extract token
+								Ticket yourTicket = (Ticket)contents.get(5); // Extract ticket
 								
 								if (!verifyToken(yourToken)) {
 									secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
+								}
+								else if (!verifyTicket(yourTicket)) {
+									secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTICKET");
 								}
 								else if (FileServer.fileList.checkFile(remotePath)) {
 									System.out.printf("Error: file already exists at %s\n", remotePath);
@@ -187,6 +207,13 @@ public class FileThread extends Thread
 									contents = getDecryptedPayload(secureMessage, true);
 									msg = (String)contents.get(0);
 									
+									if ((Integer)contents.get(1) == (sequenceNumber + 1)) {
+										sequenceNumber++;
+									}
+									else {
+										tamperedConnection = true;
+										System.out.println("CONNECTION TAMPERING DETECTED!");
+									}
 									
 									while (msg.equals("CHUNK")) {
 										fos.write((byte[])contents.get(2), 0, (Integer)contents.get(3));
@@ -196,6 +223,14 @@ public class FileThread extends Thread
 										secureMessage = (SecureEnvelope)input.readObject();
 										contents = getDecryptedPayload(secureMessage, true);
 										msg = (String)contents.get(0);
+										
+										if ((Integer)contents.get(1) == (sequenceNumber + 1)) {
+											sequenceNumber++;
+										}
+										else {
+											tamperedConnection = true;
+											System.out.println("CONNECTION TAMPERING DETECTED!");
+										}
 									}
 
 									if(msg.equals("EOF")) {
@@ -217,9 +252,16 @@ public class FileThread extends Thread
 					else if (msg.compareTo("DOWNLOADF")==0) {
 						String remotePath = (String)contents.get(2);
 						Token t = (Token)contents.get(3);
+						Ticket yourTicket = (Ticket)contents.get(4);
+						
 						if (!verifyToken(t)) {
 							secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
 							System.out.println("User is trying to use a modified token!");
+							output.writeObject(secureResponse);
+						}
+						else if (!verifyTicket(yourTicket)) {
+							secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTICKET");
+							System.out.println("User is trying to use a modified ticket!");
 							output.writeObject(secureResponse);
 						}
 						else {
@@ -273,6 +315,14 @@ public class FileThread extends Thread
 											secureMessage = (SecureEnvelope)input.readObject();
 											contents = getDecryptedPayload(secureMessage, true);
 											msg = (String)contents.get(0);
+											
+											if ((Integer)contents.get(1) == (sequenceNumber + 1)) {
+												sequenceNumber++;
+											}
+											else {
+												tamperedConnection = true;
+												System.out.println("CONNECTION TAMPERING DETECTED!");
+											}
 			
 										}
 										while (fis.available()>0);
@@ -285,6 +335,15 @@ public class FileThread extends Thread
 											secureMessage = (SecureEnvelope)input.readObject();
 											contents = getDecryptedPayload(secureMessage, true);
 											msg = (String)contents.get(0);
+											
+											if ((Integer)contents.get(1) == (sequenceNumber + 1)) {
+												sequenceNumber++;
+											}
+											else {
+												tamperedConnection = true;
+												System.out.println("CONNECTION TAMPERING DETECTED!");
+											}
+											
 											
 											if(msg.equals("OK")) {
 												System.out.printf("File data upload successful\n");
@@ -311,10 +370,15 @@ public class FileThread extends Thread
 					else if (msg.equals("DELETEF")) {
 						String remotePath = (String)contents.get(2);
 						Token t = (Token)contents.get(3);
+						Ticket yourTicket = (Ticket)contents.get(4);
 						
 						if (!verifyToken(t)) {
 							System.out.println("User is trying to use a modified token!");
 							secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
+						}
+						else if (!verifyTicket(yourTicket)) {
+							System.out.println("User is trying to use a modified ticket!");
+							secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTICKET");
 						}
 						else {
 							ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
@@ -372,6 +436,79 @@ public class FileThread extends Thread
 			e.printStackTrace(System.err);
 		}
 	}
+	
+	// Method to create tickets
+	private Ticket createTicket() {
+		System.out.println("Creating a ticket...");
+		Ticket newTicket = new Ticket("FileServer", threadID);
+		
+		byte[] ticketBytes = newTicket.toByteArray();
+		byte[] signedTicketBytes = signBytes(ticketBytes);
+		
+		newTicket.setSignature(signedTicketBytes);
+		
+		return newTicket;
+	}
+	
+	// Sign bytes (for ticket)
+	public byte[] signBytes(byte[] text) {
+		byte[] sigBytes = null;
+		Signature sig = null;
+		
+		System.out.println("Signing bytes...");
+		
+		try {
+			sig = Signature.getInstance("SHA512WithRSAEncryption", "BC");
+			sig.initSign(my_fs.privateKey);
+			sig.update(text);
+			sigBytes = sig.sign();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return sigBytes;
+	}
+	
+	private boolean verifyTicket(Ticket ticket) {
+		boolean verified = false;
+		
+		byte[] sigBytes = null;
+		byte[] ticketBytes = null;
+		Signature sig = null;
+		
+		ticketBytes = ticket.toByteArray();
+		sigBytes = ticket.getSignature();
+		
+		System.out.println("Verifying token...");
+		
+		if (ticket.getThreadID() == threadID) {
+			
+			try {
+				sig = Signature.getInstance("SHA512WithRSAEncryption", "BC");
+				sig.initVerify(my_fs.publicKey);
+				sig.update(ticketBytes);
+				verified = sig.verify(sigBytes);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			if (!verified) {
+				tamperedTicket = true;
+				System.out.println("Ticket tampered with!");
+			}
+			System.out.println("Ticket verified? " + verified);
+			
+		}
+		else {
+			System.out.println("Wrong ticket!");
+			tamperedTicket = true;
+			verified = false;
+		}
+		
+		return verified;
+	}
+	
+	
 	
 	/* Crypto Related Methods
 	 * 
@@ -532,11 +669,15 @@ public class FileThread extends Thread
 			sig.update(tokenBytes);
 			verified = sig.verify(sigBytes);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		System.out.println("Token verified: " + verified);
+		if (!verified) {
+			tamperedToken = true;
+			System.out.println("Token tampered with!");
+		}
+		
+		System.out.println("Token verified? " + verified);
 		
 		return verified;
 	}

@@ -764,6 +764,7 @@ public class GroupThread extends Thread
 		}
 		else {
 			System.out.println("Wrong token!");
+			tamperedToken = true;
 			verified = false;
 		}
 		
