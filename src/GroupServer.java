@@ -113,6 +113,8 @@ public class GroupServer extends Server {
 		if(!loadKeys()) {
 			// Just in case, if there is no key file, use the MasterKeyManger's public method to create one!
 			MasterKeyManager.addKeyExternal();
+			// Now try loading the keys again.
+			loadKeys();
 		}
 		
 		//Open user file to get user list
