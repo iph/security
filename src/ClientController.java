@@ -1,4 +1,9 @@
+import java.util.ArrayList;
 import java.util.List;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * The ClientController is the layer between the clients and the interface that sits on top.
@@ -340,7 +345,18 @@ public class ClientController {
 		
 		// First verify no null values were passed
 		if ((sourceFile != null) && (destFile != null) && (group != null)){
-			fileUploaded = fClient.upload(sourceFile, destFile, group, token);
+	
+			// Need to first get group server keys.
+			
+			// TODO: save seed, keyid and key
+			ArrayList<Object> list = gClient.getNewFileKey(group, token);
+			System.out.println(list.get(2).toString());
+
+			// Make sure that the list is correct.
+			if (list != null && (!((String)(list.get(0))).equals("OK")) && list.size() != 5) {
+				return false;
+			}
+			fileUploaded = fClient.upload(sourceFile, destFile, group, token, (SecretKeySpec) list.get(2), (byte[]) list.get(3), (Integer) list.get(4));
 		}
 		
 		return fileUploaded;
@@ -354,7 +370,13 @@ public class ClientController {
 		boolean fileDownloaded = false;
 		
 		if ((sourceFile != null) && (destFile != null)){
-			fileDownloaded = fClient.download(sourceFile, destFile, token);
+			List<Object> list= fClient.getFileInfo(sourceFile, token);
+			if(list != null && list.size() != 6){
+				return false;
+			}
+			SecretKeySpec key = gClient.getFileKey((byte[])list.get(3), (Integer)list.get(4), (String)list.get(5), token);
+			System.out.println(key.toString());
+			fileDownloaded = fClient.download(sourceFile, destFile, token, key, (byte[])list.get(2));
 		}
 		
 		return fileDownloaded;

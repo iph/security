@@ -7,10 +7,12 @@ import java.security.Key;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.crypto.KeyGenerator;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.util.encoders.Hex;
@@ -311,6 +313,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 		}
 	}
 
+
 	@SuppressWarnings("unchecked")
 	public List<String> listMembers(String group, UserToken token) {
 		try {
@@ -420,5 +423,47 @@ public class GroupClient extends Client implements GroupClientInterface {
 			e.printStackTrace(System.err);
 			return false;
 		}
+	}
+	
+	public ArrayList<Object> getNewFileKey(String groupname, UserToken token){
+		try{
+			SecureEnvelope secureMessage = null;
+			ArrayList<Object> list = new ArrayList<Object>();
+			list.add(groupname);
+			list.add(token);
+			secureMessage = makeSecureEnvelope("NEWFILEKEY", list);
+			output.writeObject(secureMessage);
+
+
+			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
+			return tempList;		
+		} catch (Exception e) {
+			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace(System.err);
+			return null;		
+		}
+	}
+	
+	public SecretKeySpec getFileKey(byte[] seed, int keyId, String group, UserToken token) {
+		SecureEnvelope secureMessage = null;
+		ArrayList<Object> list = new ArrayList<Object>();
+		list.add(group);
+		list.add(seed);
+		list.add(keyId);
+		list.add(token);
+		secureMessage = makeSecureEnvelope("RETRIEVEFILEKEY", list);
+		try {
+			output.writeObject(secureMessage);
+			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
+			String msg = (String)tempList.get(0);
+			if(msg.equals("OK")){
+				return (SecretKeySpec) tempList.get(2);
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+
 	}
 }
