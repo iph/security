@@ -234,8 +234,11 @@ public class FileThread extends Thread
 									}
 
 									if(msg.equals("EOF")) {
+										byte[] iv = (byte[])contents.get(2);
+										byte[] seed = (byte[]) contents.get(3);
+										int keyId = (Integer) contents.get(4); 
 										System.out.printf("Transfer successful file %s\n", remotePath);
-										FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath);
+										FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath, iv, seed, keyId);
 										secureResponse = makeSecureEnvelope("OK"); // Success
 									}
 									else {
@@ -426,6 +429,53 @@ public class FileThread extends Thread
 					{
 						socket.close();
 						proceed = false;
+					}
+					else if (msg.equals("FILEINFO")) {
+						if(contents.size() < 5) {
+							secureResponse = makeSecureEnvelope("FAIL-BADCONTENTS");
+						}
+						if(contents.get(2) == null) {
+							secureResponse = makeSecureEnvelope("FAIL-BADPATH");
+						}
+						else if(contents.get(3) == null) {
+							secureResponse = makeSecureEnvelope("FAIL-BADTOKEN");
+						}
+						else if (contents.get(4) == null) {
+							secureResponse = makeSecureEnvelope("FAIL-BADTICKET");
+						}
+						else {
+							String remotePath = (String)contents.get(2);
+							Token yourToken = (Token)contents.get(3); // Extract token
+							Ticket yourTicket = (Ticket)contents.get(4); // Extract ticket
+							
+							if (!verifyToken(yourToken)) {
+								secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTOKEN");
+							}
+							else if (!verifyTicket(yourTicket)) {
+								secureResponse = makeSecureEnvelope("FAIL-MODIFIEDTICKET");
+							}
+							else if (FileServer.fileList.checkFile(remotePath)) {
+								System.out.printf("Error: file already exists at %s\n", remotePath);
+								secureResponse = makeSecureEnvelope("FAIL-FILEEXISTS"); //Success
+							}
+							else if (!yourToken.getGroups().contains(FileServer.fileList.getFile("/"+remotePath).getGroup())) {
+								System.out.printf("Error: user missing valid token for group %s\n", FileServer.fileList.getFile(remotePath).getGroup());
+								secureResponse = makeSecureEnvelope("FAIL-UNAUTHORIZED"); //Success
+							}
+							else{
+
+								ShareFile file = FileServer.fileList.getFile("/"+remotePath);
+								ArrayList<Object> list = new ArrayList<Object>();
+								list.add(file.getIV());
+								list.add(file.getSeed());
+								list.add(file.getKeyId());
+								list.add(file.getGroup());
+								System.out.println("Sending file info..." + list);
+								secureResponse = makeSecureEnvelope("OK", list);
+
+							}
+						}
+						output.writeObject(secureResponse);
 					}
 				}
 			} while(proceed);

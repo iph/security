@@ -1,6 +1,8 @@
 
 import java.util.List;
 
+import javax.crypto.spec.SecretKeySpec;
+
 /**
  * Interface describing the operations that must be supported by the
  * client application used to talk with the file servers.  All methods
@@ -51,11 +53,14 @@ public interface FileClientInterface
      * @param destFile   The filename to use on the server
      * @param group      The group to share this file with
      * @param token      The token of the user uploading the file
+     * @param keySpec	 The secret key used to encrypt the uploaded file.
+     * @param seed		 The seed used in creating the key.
+     * @param keyId		 The id of the original master key, for backwards compatibility.
      *
      * @return true on success, false on failure
      *
      */
-    public boolean upload(final String sourceFile, final String destFile, final String group, final UserToken token);
+    public boolean upload(final String sourceFile, final String destFile, final String group, final UserToken token, final SecretKeySpec keySpec, byte[] seed, int keyId);
 
 
     /**
@@ -69,7 +74,7 @@ public interface FileClientInterface
      * @return true on success, false on failure
      *
      */
-    public boolean download(final String sourceFile, final String destFile, final UserToken token);
+	public boolean download(String sourceFile, String destFile, UserToken token, SecretKeySpec keySpec, byte[] iv);
 
 
     /**

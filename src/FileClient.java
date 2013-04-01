@@ -8,10 +8,14 @@ import java.security.Key;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.util.encoders.Base64;
 
@@ -90,7 +94,6 @@ public class FileClient extends Client implements FileClientInterface {
 		try {
 			message = (Envelope)input.readObject();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -128,7 +131,6 @@ public class FileClient extends Client implements FileClientInterface {
 		try {
 			AESkeygen = KeyGenerator.getInstance("AES", "BC");
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -160,7 +162,6 @@ public class FileClient extends Client implements FileClientInterface {
 		else {
 			sessionKey = null;
 			
-			//
 			// TODO: Might have to modify this later to have an encrypted disconnect
 			secureDisconnect();
 			//
@@ -208,16 +209,20 @@ public class FileClient extends Client implements FileClientInterface {
 		return true;
 	}
 
-	public boolean download(String sourceFile, String destFile, UserToken token) {
+	public boolean download(String sourceFile, String destFile, UserToken token, SecretKeySpec keySpec, byte[] iv) {
 		SecureEnvelope secureMessage = null;
 		
 		if (sourceFile.charAt(0) == '/') {
 			sourceFile = sourceFile.substring(1);
 		}
 
+		
+		
 		File file = new File(destFile);
 		try {
-
+			IvParameterSpec ivSpec = new IvParameterSpec(iv);
+			Cipher inCipher = Cipher.getInstance("AES", "BC");
+			inCipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
 			if (!file.exists()) {
 				file.createNewFile();
 				FileOutputStream fos = new FileOutputStream(file);
@@ -234,7 +239,11 @@ public class FileClient extends Client implements FileClientInterface {
 				String msg = (String)contents.get(0);
 
 				while (msg.equals("CHUNK")) {
-					fos.write((byte[]) contents.get(2), 0, (Integer) contents.get(3));
+					byte[] plainText;
+					System.out.println(Arrays.toString((byte[])contents.get(2)));
+					plainText = inCipher.doFinal((byte[]) contents.get(2), 0, (Integer) contents.get(3));
+				
+					fos.write(plainText, 0, plainText.length);
 					System.out.printf(".");
 					secureMessage = makeSecureEnvelope("DOWNLOADF"); // Success
 					output.writeObject(secureMessage);
@@ -297,7 +306,7 @@ public class FileClient extends Client implements FileClientInterface {
 		}
 	}
 
-	public boolean upload(String sourceFile, String destFile, String group, UserToken token) {
+	public boolean upload(String sourceFile, String destFile, String group, UserToken token, SecretKeySpec keySpec, byte[] seed, int keyId) {
 		SecureEnvelope secureMessage = null;
 		
 		if (destFile.charAt(0) != '/') {
@@ -312,10 +321,17 @@ public class FileClient extends Client implements FileClientInterface {
 			list.add(myTicket);
 			secureMessage = makeSecureEnvelope("UPLOADF", list);
 
+		    // Pre encryption stuff.
+			byte[] iv = new byte[16];
+		    SecureRandom rng = SecureRandom.getInstance("SHA1PRNG");
+		    rng.nextBytes(iv);
+			IvParameterSpec ivSpec = new IvParameterSpec(iv);
+			Cipher inCipher = Cipher.getInstance("AES", "BC");
+			inCipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
+			
 			output.writeObject(secureMessage);
 
 			FileInputStream fis = new FileInputStream(sourceFile);
-
 			ArrayList<Object> contents = (ArrayList<Object>) inputQueue.take();
 			String msg = (String) contents.get(0);
 
@@ -329,6 +345,7 @@ public class FileClient extends Client implements FileClientInterface {
 
 			do {
 				byte[] buf = new byte[4096];
+				byte[] cipherText;
 				if (!msg.equals("READY")) {
 					System.out.printf("Server error: %s\n", msg);
 					return false;
@@ -341,10 +358,16 @@ public class FileClient extends Client implements FileClientInterface {
 					System.out.println("Read error");
 					return false;
 				}
+	
+
+				// Encrypt the file.
+				// TODO : Make sure this works in degenerate cases.
+				cipherText = inCipher.doFinal(buf, 0, n);
+				System.out.println(Arrays.toString(cipherText));
 
 				ArrayList<Object> tempList = new ArrayList<Object>();
-				tempList.add(buf);
-				tempList.add(new Integer(n));
+				tempList.add(cipherText);
+				tempList.add(new Integer(cipherText.length));
 				secureMessage = makeSecureEnvelope("CHUNK", tempList);
 
 				output.writeObject(secureMessage);
@@ -357,7 +380,12 @@ public class FileClient extends Client implements FileClientInterface {
 			// If server indicates success, return the member list
 			if (msg.equals("READY")) {
 
-				secureMessage = makeSecureEnvelope("EOF");
+				ArrayList<Object> listSend = new ArrayList<Object>();
+				listSend.add(iv);
+				listSend.add(seed);
+				listSend.add(keyId);
+				secureMessage = makeSecureEnvelope("EOF", listSend);
+
 				output.writeObject(secureMessage);
 
 				contents = (ArrayList<Object>) inputQueue.take();
@@ -380,6 +408,41 @@ public class FileClient extends Client implements FileClientInterface {
 		}
 		
 		return true;
+	}
+	
+	List<Object> getFileInfo(String remotePath, UserToken token){
+		SecureEnvelope secureMessage = null;
+		if (remotePath.charAt(0) == '/') {
+			remotePath = remotePath.substring(1);
+		}
+
+
+		ArrayList<Object> list = new ArrayList<Object>();
+		list.add(remotePath);
+		list.add(token);
+		list.add(myTicket);
+		secureMessage = makeSecureEnvelope("FILEINFO", list);
+
+		try {
+			output.writeObject(secureMessage);
+			ArrayList<Object> contents;
+			contents = (ArrayList<Object>) inputQueue.take();
+			String msg = (String) contents.get(0);
+
+			// If server indicates success, return the member list
+			if (msg.equals("OK")) {
+				System.out.printf("Meta data retrieved successful\n");
+				return contents;
+			} else {
+				System.out.printf("info not retrieved failed: %s\n", msg);
+				return null;
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 }
 

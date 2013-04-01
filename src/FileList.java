@@ -17,9 +17,9 @@ import java.util.*;
 		fileMap = new HashMap<String,ShareFile>();
 	}
 	
-	public synchronized void addFile(String owner, String group, String path)
+	public synchronized void addFile(String owner, String group, String path, byte[] iv, byte[] seed, int keyId)
 	{
-		ShareFile newFile = new ShareFile(owner, group, path);
+		ShareFile newFile = new ShareFile(owner, group, path, iv, seed, keyId);
 		//list.add(newFile);
 		fileMap.put(path, newFile);
 	}

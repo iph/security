@@ -175,9 +175,9 @@ public abstract class Client {
 		
 		try {
 			outCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
-		outCipher.init(Cipher.DECRYPT_MODE, sessionKey, ivSpec);
-		plainText = outCipher.doFinal(cipherText);
-	} catch (Exception e) {
+			outCipher.init(Cipher.DECRYPT_MODE, sessionKey, ivSpec);
+			plainText = outCipher.doFinal(cipherText);
+		} catch (Exception e) {
 		// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
