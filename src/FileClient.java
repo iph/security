@@ -240,8 +240,16 @@ public class FileClient extends Client implements FileClientInterface {
 
 				while (msg.equals("CHUNK")) {
 					byte[] plainText;
-					System.out.println(Arrays.toString((byte[])contents.get(2)));
-					plainText = inCipher.doFinal((byte[]) contents.get(2), 0, (Integer) contents.get(3));
+					byte[] cipherText = (byte[]) contents.get(2);
+					int n = (Integer) contents.get(3);
+					if(n == 4096){
+						plainText = inCipher.update(cipherText, 0, n);
+					}
+					else{
+						plainText = inCipher.update(cipherText, 0, n);
+					}
+					//System.out.println(Arrays.toString((byte[])contents.get(2)));
+					//plainText = inCipher.doFinal((byte[]) contents.get(2), 0, (Integer) contents.get(3));
 				
 					fos.write(plainText, 0, plainText.length);
 					System.out.printf(".");
@@ -352,17 +360,20 @@ public class FileClient extends Client implements FileClientInterface {
 				}
 
 				int n = fis.read(buf); // Can throw an IOException
-				if (n > 0) {
+				if (n > 0 && n == 4096) {
 					System.out.printf(".");
+					cipherText = inCipher.update(buf, 0, n);
 				} else if (n < 0) {
 					System.out.println("Read error");
 					return false;
+				}
+				else{
+					cipherText = inCipher.doFinal(buf, 0, n);
 				}
 	
 
 				// Encrypt the file.
 				// TODO : Make sure this works in degenerate cases.
-				cipherText = inCipher.doFinal(buf, 0, n);
 				System.out.println(Arrays.toString(cipherText));
 
 				ArrayList<Object> tempList = new ArrayList<Object>();
