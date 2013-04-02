@@ -8,17 +8,20 @@ public class SecureEnvelope extends Envelope {
 	private byte[] payload;
 	// IvParameterSpec is not serializable, thus a byte[] is used
 	private byte[] ivSpec;
+	private byte[] hmac;
 	
 	public SecureEnvelope(String text) {
 		super(text);
 		payload = null;
 		ivSpec = null;
+		hmac = null;
 	}
 	
 	public SecureEnvelope() {
 		super();
 		payload = null;
 		ivSpec = null;
+		hmac = null;
 	}
 	
 	public void setPayload(byte[] _payload) {
@@ -38,4 +41,11 @@ public class SecureEnvelope extends Envelope {
 		return ivSpec;
 	}
 	
+	public void setHMAC(byte[] _hmac){
+		hmac = _hmac;
+	}
+	
+	public byte[] getHMAC(){
+		return hmac;
+	}
 }

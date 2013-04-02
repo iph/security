@@ -4,11 +4,15 @@ import java.io.EOFException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -35,9 +39,11 @@ public class GroupClientThread extends Thread {
 			do {
 				SecureEnvelope secureMessage = null;
 				ArrayList<Object> contents = null;
+				byte[] hmac = null;
 				String msg = null;
 				try {
 					secureMessage = (SecureEnvelope)input.readObject();
+					hmac = secureMessage.getHMAC();
 					contents = getDecryptedPayload(secureMessage);
 					msg = (String)contents.get(0);
 					System.out.println("GroupClientThread message received: " + msg);
@@ -54,6 +60,16 @@ public class GroupClientThread extends Thread {
 				else {
 					my_gc.tamperedConnection = true;
 					System.out.println("CONNECTION TAMPERING DETECTED!");
+				}
+				System.out.println("hmac is: " + Arrays.toString(hmac));
+				System.out.println("contents is: "+ Arrays.toString(listToByteArray(contents)));
+				System.out.println("Key is..." + Arrays.toString(my_gc.integrityKey.getEncoded()));
+				if(hmac == null || !SecurityUtils.checkHMAC(listToByteArray(contents), hmac, my_gc.integrityKey)){
+					my_gc.tamperedConnection = true;
+					System.out.println("CONNECTION TAMPERING DETECTED -- HMAC FAIL!");
+					if(hmac == null){
+						System.out.println("NO HMAC DETECTED");
+					}
 				}
 				
 				if ((msg.equals("OK")) || (msg.contains("FAIL"))) {
@@ -121,7 +137,10 @@ public class GroupClientThread extends Thread {
 		list.add(0, msg);
 		
 		// Set the payload using the encrypted ArrayList
-		envelope.setPayload(encryptPayload(listToByteArray(list), true, ivSpec));
+		byte[] payloadBytes = listToByteArray(list);
+		byte[] hmac = SecurityUtils.createHMAC(payloadBytes, my_gc.integrityKey);
+		envelope.setHMAC(hmac);
+		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec));
 		
 		return envelope;
 	}
@@ -137,7 +156,6 @@ public class GroupClientThread extends Thread {
 				inCipher.init(Cipher.ENCRYPT_MODE, my_gc.sessionKey, ivSpec);
 				cipherText = inCipher.doFinal(plainText);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -148,13 +166,16 @@ public class GroupClientThread extends Thread {
 				System.out.println("plainText length: " + plainText.length);
 				cipherText = inCipher.doFinal(plainText);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		
 		return cipherText;
 	}
+	
+	
+	
+
 	
 	private ArrayList<Object> getDecryptedPayload(SecureEnvelope envelope) {
 		// Using this wrapper method in case the envelope changes at all :)
@@ -170,7 +191,6 @@ public class GroupClientThread extends Thread {
 			outCipher.init(Cipher.DECRYPT_MODE, my_gc.sessionKey, ivSpec);
 			plainText = outCipher.doFinal(cipherText);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

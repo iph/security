@@ -147,10 +147,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 				// Successful response
 				if (((String)(tempList.get(0))).equals("OK")) {
 					// If there is a return nonce in the Envelope, return it
-					if (tempList.size() == 3) {
+					if (tempList.size() == 4) {
 						int returnNonce = (Integer) tempList.get(2);
 						// Grab the sequenceNumber from the message as well
 						sequenceNumber = (Integer)tempList.get(1);
+						integrityKey = (Key)tempList.get(3);
 						return returnNonce;
 					}
 				}

@@ -9,4 +9,5 @@ public class Payload implements java.io.Serializable {
 	public Payload(byte[] data) {
 		encryptedData = Arrays.copyOf(data, data.length);
 	}
+	
 }

@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.security.Key;
 import java.security.SecureRandom;
 import java.security.Signature;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.ByteArrayInputStream;
@@ -17,6 +18,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
 import javax.crypto.spec.IvParameterSpec;
 
 public class FileThread extends Thread
@@ -24,6 +26,7 @@ public class FileThread extends Thread
 	private final Socket socket;
 	private FileServer my_fs;
 	private Key sessionKey;
+	private Key integrityKey;
 	private int sequenceNumber;
 	private boolean tamperedConnection;
 	private boolean tamperedToken;
@@ -86,6 +89,9 @@ public class FileThread extends Thread
 
 							// Get random int sequenceNumber and set it
 							sequenceNumber = rand.nextInt();
+							// Key generation for HMAC
+							KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA1");
+							integrityKey = keyGen.generateKey();
 							
 							ArrayList<Object> list = new ArrayList<Object>();
 							list.add(nonce);
@@ -93,7 +99,7 @@ public class FileThread extends Thread
 							// Create a new Ticket for this session, and add it to the message
 							Ticket yourTicket = createTicket();
 							list.add(yourTicket);
-							
+							list.add(integrityKey);
 							secureResponse = makeSecureEnvelope("OK", list);
 							
 							output.writeObject(secureResponse);
@@ -117,7 +123,8 @@ public class FileThread extends Thread
 						tamperedConnection = true;
 						System.out.println("CONNECTION TAMPERING DETECTED!");
 					}
-					
+					verifyHMAC(listToByteArray(contents), secureMessage.getHMAC());
+
 					if(msg.equals("LFILES")) {
 						// Need dat token
 						if(contents.size() < 4) {
@@ -519,6 +526,18 @@ public class FileThread extends Thread
 		return sigBytes;
 	}
 	
+	/*
+	 * Check hmac here.
+	 * 
+	 */
+	private boolean verifyHMAC(byte[] hmac, byte[] contents) {
+		tamperedConnection = SecurityUtils.checkHMAC(contents, hmac, integrityKey);
+		if(tamperedConnection){
+			System.out.println("CONNECTION TAMPERING DETECTED--WRONG HMAC");
+		}
+		return tamperedConnection;
+	}
+	
 	private boolean verifyTicket(Ticket ticket) {
 		boolean verified = false;
 		
@@ -589,7 +608,13 @@ public class FileThread extends Thread
 		list.add(0, msg);
 		
 		// Set the payload using the encrypted ArrayList
-		envelope.setPayload(encryptPayload(listToByteArray(list), true, ivSpec));
+		byte[] payloadBytes = listToByteArray(list);
+		byte[] hmac = SecurityUtils.createHMAC(payloadBytes, integrityKey);
+		envelope.setHMAC(hmac);
+		System.out.println("hmac is: " + Arrays.toString(hmac));
+		System.out.println("contents is: "+ Arrays.toString(listToByteArray(list)));
+		//System.out.println("Contents are..." + list);
+		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec));
 		
 		return envelope;
 	}

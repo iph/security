@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -35,10 +36,12 @@ public class FileClientThread extends Thread {
 			do {
 				SecureEnvelope secureMessage = null;
 				ArrayList<Object> contents = null;
+				byte[] hmac = null;
 				String msg = null;
 				try {
 					secureMessage = (SecureEnvelope)input.readObject();
 					contents = getDecryptedPayload(secureMessage);
+					hmac = secureMessage.getHMAC();
 					msg = (String)contents.get(0);
 					System.out.println("FileClientThread message received: " + msg);
 				} catch (EOFException e) {
@@ -52,6 +55,17 @@ public class FileClientThread extends Thread {
 				else {
 					my_fc.tamperedConnection = true;
 					System.out.println("CONNECTION TAMPERING DETECTED!");
+				}
+				
+				System.out.println("hmac is: " + Arrays.toString(hmac));
+				System.out.println("contents is: "+ Arrays.toString(listToByteArray(contents)));
+				System.out.println("Key is..." + Arrays.toString(my_fc.integrityKey.getEncoded()));
+				if(hmac == null || !SecurityUtils.checkHMAC(listToByteArray(contents), hmac, my_fc.integrityKey)){
+					my_fc.tamperedConnection = true;
+					System.out.println("CONNECTION TAMPERING DETECTED -- HMAC FAIL!");
+					if(hmac == null){
+						System.out.println("NO HMAC DETECTED");
+					}
 				}
 				
 				// Put the contents in the queue.
@@ -108,8 +122,10 @@ public class FileClientThread extends Thread {
 		list.add(0, msg);
 		
 		// Set the payload using the encrypted ArrayList
-		envelope.setPayload(encryptPayload(listToByteArray(list), true, ivSpec));
-		
+		byte[] payloadBytes = listToByteArray(list);
+		byte[] hmac = SecurityUtils.createHMAC(payloadBytes, my_fc.integrityKey);
+		envelope.setHMAC(hmac);
+		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec));		
 		return envelope;
 	}
 	

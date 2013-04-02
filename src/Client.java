@@ -24,6 +24,7 @@ public abstract class Client {
 	protected int myPort;
 	protected ClientController controller;
 	protected Key sessionKey;
+	protected Key integrityKey;
 	protected PublicKey publicKey;
 	
 	protected int sequenceNumber;
@@ -129,8 +130,11 @@ public abstract class Client {
 		list.add(0, msg);
 		
 		// Set the payload using the encrypted ArrayList
-		envelope.setPayload(encryptPayload(listToByteArray(list), true, ivSpec));
-		
+		byte[] payloadBytes = listToByteArray(list);
+		byte[] hmac = SecurityUtils.createHMAC(payloadBytes, integrityKey);
+		envelope.setHMAC(hmac);
+		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec));
+				
 		return envelope;
 	}
 	

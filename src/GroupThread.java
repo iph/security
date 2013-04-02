@@ -18,6 +18,7 @@ import java.util.*;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -29,6 +30,7 @@ public class GroupThread extends Thread
 	private final Socket socket;
 	private GroupServer my_gs;
 	private Key sessionKey;
+	private Key integrityKey;
 	private int sequenceNumber;
 	private boolean tamperedConnection;
 	private boolean tamperedToken;
@@ -82,9 +84,13 @@ public class GroupThread extends Thread
 						if (!(objectList == null) && (objectList.size() == 2)) {
 							// Grab the session 
 							sessionKey = (Key)objectList.get(0);
+							
 							int nonce = (Integer)objectList.get(1);
 							nonce = nonce - 1; // nonce - 1 to return
 							
+							// Key generation for HMAC
+							KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA1");
+							integrityKey = keyGen.generateKey();
 							// Create a secure random number generator
 							SecureRandom rand = new SecureRandom();
 
@@ -93,7 +99,7 @@ public class GroupThread extends Thread
 							
 							ArrayList<Object> list = new ArrayList<Object>();
 							list.add(nonce);
-							
+							list.add(integrityKey);
 							secureResponse = makeSecureEnvelope("OK", list);
 							
 							output.writeObject(secureResponse);
@@ -117,6 +123,7 @@ public class GroupThread extends Thread
 					System.out.println("Request received: " + msg);
 					// Verify the sequence number
 					verifySequenceNumber((Integer)contents.get(1));
+					verifyHMAC(listToByteArray(contents), secureMessage.getHMAC());
 					
 					if(msg.equals("GET")) { // Client wants to obtain a token
 						// Declare variables
@@ -529,6 +536,8 @@ public class GroupThread extends Thread
 		}
 	}
 	
+
+
 	//Method to create tokens
 	private UserToken createToken(String username, String password) 
 	{
@@ -734,6 +743,17 @@ public class GroupThread extends Thread
 		}
 	}
 	
+	/*
+	 * Check hmac here.
+	 * 
+	 */
+	private boolean verifyHMAC(byte[] hmac, byte[] contents) {
+		tamperedConnection = SecurityUtils.checkHMAC(contents, hmac, integrityKey);
+		if(tamperedConnection){
+			System.out.println("CONNECTION TAMPERING DETECTED--WRONG HMAC");
+		}
+		return tamperedConnection;
+	}
 	
 	
 	/*
@@ -880,7 +900,14 @@ public class GroupThread extends Thread
 		list.add(0, msg);
 		
 		// Set the payload using the encrypted ArrayList
-		envelope.setPayload(encryptPayload(listToByteArray(list), true, ivSpec));
+		// Set the payload using the encrypted ArrayList
+		byte[] payloadBytes = listToByteArray(list);
+		byte[] hmac = SecurityUtils.createHMAC(payloadBytes, integrityKey);
+		envelope.setHMAC(hmac);
+		System.out.println("hmac is: " + Arrays.toString(hmac));
+		System.out.println("contents is: "+ Arrays.toString(listToByteArray(list)));
+		//System.out.println("Contents are..." + list);
+		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec));
 		
 		return envelope;
 	}

@@ -68,12 +68,14 @@ public class FileClient extends Client implements FileClientInterface {
 				// Successful response
 				if (((String)(tempList.get(0))).equals("OK")) {
 					// If there is a return nonce in the Envelope, return it
-					if (tempList.size() == 4) {
+					if (tempList.size() == 5) {
 						int returnNonce = (Integer) tempList.get(2);
 						// Grab the sequenceNumber from the message as well
 						sequenceNumber = (Integer)tempList.get(1);
 						// Get the Ticket from the message
 						myTicket = (Ticket)tempList.get(3);
+						integrityKey = (Key)tempList.get(4);
+
 						return returnNonce;
 					}
 				}
