@@ -1,3 +1,8 @@
+package cs1653.termproject.clients;
+
+import cs1653.termproject.shared.SecureEnvelope;
+import cs1653.termproject.shared.SecurityUtils;
+
 import java.net.Socket;
 import java.security.Key;
 import java.security.PublicKey;
@@ -11,6 +16,8 @@ import java.io.ObjectOutputStream;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
+
+import cs1653.termproject.shared.Envelope;
 
 public abstract class Client {
 
@@ -85,14 +92,11 @@ public abstract class Client {
 	
 	public void secureDisconnect() {
 		if (isConnected()) {
-			try
-			{
-				//SecureEnvelope secureMessage = new SecureEnvelope("DISCONNECT");
+			try {
 				SecureEnvelope secureMessage = makeSecureEnvelope("DISCONNECT");
 				output.writeObject(secureMessage);
 			}
-			catch(Exception e)
-			{
+			catch(Exception e) {
 				System.err.println("Error: " + e.getMessage());
 				e.printStackTrace(System.err);
 			}
@@ -143,24 +147,21 @@ public abstract class Client {
 		Cipher inCipher;
 		
 		if (useSessionKey) {
-			// TODO
-		try {
-			inCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
-			inCipher.init(Cipher.ENCRYPT_MODE, sessionKey, ivSpec);
-			cipherText = inCipher.doFinal(plainText);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			try {
+				inCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
+				inCipher.init(Cipher.ENCRYPT_MODE, sessionKey, ivSpec);
+				cipherText = inCipher.doFinal(plainText);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
-	}
-	else { // Use public key RSA
-		try {
-			inCipher = Cipher.getInstance("RSA", "BC");
-			inCipher.init(Cipher.ENCRYPT_MODE, publicKey, new SecureRandom());
-			System.out.println("plainText length: " + plainText.length);
-			cipherText = inCipher.doFinal(plainText);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
+		else { // Use public key RSA
+			try {
+				inCipher = Cipher.getInstance("RSA", "BC");
+				inCipher.init(Cipher.ENCRYPT_MODE, publicKey, new SecureRandom());
+				System.out.println("plainText length: " + plainText.length);
+				cipherText = inCipher.doFinal(plainText);
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -182,7 +183,6 @@ public abstract class Client {
 			outCipher.init(Cipher.DECRYPT_MODE, sessionKey, ivSpec);
 			plainText = outCipher.doFinal(cipherText);
 		} catch (Exception e) {
-		// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -201,7 +201,6 @@ public abstract class Client {
 		  out.close();
 		  bos.close();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -221,7 +220,6 @@ public abstract class Client {
 		  in.close();
 		  
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

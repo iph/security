@@ -1,39 +1,28 @@
-/* This thread does all the work. It communicates with the client through Envelopes.
- * 
- */
-import java.lang.Thread;
+package cs1653.termproject.servers;
+
 import java.net.Socket;
 import java.io.*;
-import java.security.InvalidKeyException;
 import java.security.Key;
-import java.security.KeyPair;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
 import java.util.*;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-public class GroupThread extends Thread 
+import cs1653.termproject.shared.SecureEnvelope;
+import cs1653.termproject.shared.SecurityUtils;
+import cs1653.termproject.shared.Token;
+import cs1653.termproject.shared.UserToken;
+
+public class GroupThread extends ServerThread 
 {
 	private final Socket socket;
 	private GroupServer my_gs;
-	private Key sessionKey;
-	private Key integrityKey;
-	private int sequenceNumber;
-	private boolean tamperedConnection;
-	private boolean tamperedToken;
 	private final int threadID;
 	
 	public GroupThread(Socket _socket, GroupServer _gs)
@@ -79,7 +68,7 @@ public class GroupThread extends Thread
 					}
 					else {
 						// Get the list from the SecureEnvelope, false because it's NOT using the session key
-						ArrayList<Object> objectList = getDecryptedPayload(secureMessage, false);
+						ArrayList<Object> objectList = getDecryptedPayload(secureMessage, false, my_gs.privateKey);
 						// Make sure it doesn't return null and it has two elements in the list
 						if (!(objectList == null) && (objectList.size() == 2)) {
 							// Grab the session 
@@ -116,7 +105,7 @@ public class GroupThread extends Thread
 				}
 				else { // Any case other than SESSION INIT and there is a payload
 					// Get the decrypted payload
-					ArrayList<Object> contents = getDecryptedPayload(secureMessage, true);
+					ArrayList<Object> contents = getDecryptedPayload(secureMessage, true, null);
 					// Get the msg from the payload
 					String msg = (String)contents.get(0);
 					// Print the message that was received
@@ -551,7 +540,7 @@ public class GroupThread extends Thread
 			UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username), threadID);
 			
 			byte[] tokenBytes = yourToken.toByteArray();
-			byte[] signedTokenBytes = signBytes(tokenBytes);
+			byte[] signedTokenBytes = signBytes(tokenBytes, my_gs.privateKey);
 			
 			yourToken.setSignature(signedTokenBytes);
 
@@ -561,25 +550,6 @@ public class GroupThread extends Thread
 		{
 			return null;
 		}
-	}
-	
-	// Sign bytes (for token)
-	public byte[] signBytes(byte[] text) {
-		byte[] sigBytes = null;
-		Signature sig = null;
-		
-		System.out.println("Signing bytes...");
-		
-		try {
-			sig = Signature.getInstance("SHA512WithRSAEncryption", "BC");
-			sig.initSign(my_gs.privateKey);
-			sig.update(text);
-			sigBytes = sig.sign();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		return sigBytes;
 	}
 	
 	private boolean addOwnerToGroup(String groupname, String username, Token yourToken) {
@@ -832,6 +802,8 @@ public class GroupThread extends Thread
 		
 		byte[] hash = md.digest(combinedBytes);
 		
+		
+		
 		// Generate the secret key specs.
 		SecretKeySpec keySpec = new SecretKeySpec(hash, "AES");
 		
@@ -875,142 +847,6 @@ public class GroupThread extends Thread
 	 * These methods will abstract the whole secure session process.
 	 * 
 	 */
-	
-	// Wrap the other makeSecureEnvelope message by passing an empty list
-	protected SecureEnvelope makeSecureEnvelope(String msg) {
-		ArrayList<Object> list = new ArrayList<Object>();
-		return makeSecureEnvelope(msg, list);
-	}
-	 
-	protected SecureEnvelope makeSecureEnvelope(String msg, ArrayList<Object> list) {
-		// Make a new envelope
-		SecureEnvelope envelope = new SecureEnvelope();
-		
-		// Create new ivSpec
-		IvParameterSpec ivSpec = new IvParameterSpec(new byte[16]);
-		
-		// Set the ivSpec in the envelope
-		envelope.setIV(ivSpec.getIV());
-		
-		// Increment the sequenceNumber
-		sequenceNumber++;
-		
-		// Add the msg and sequenceNumber to the list
-		list.add(0, sequenceNumber);
-		list.add(0, msg);
-		
-		// Set the payload using the encrypted ArrayList
-		// Set the payload using the encrypted ArrayList
-		byte[] payloadBytes = listToByteArray(list);
-		byte[] hmac = SecurityUtils.createHMAC(payloadBytes, integrityKey);
-		envelope.setHMAC(hmac);
-		System.out.println("hmac is: " + Arrays.toString(hmac));
-		System.out.println("contents is: "+ Arrays.toString(listToByteArray(list)));
-		//System.out.println("Contents are..." + list);
-		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec));
-		
-		return envelope;
-	}
-	
-	private byte[] encryptPayload(byte[] plainText, boolean useSessionKey, IvParameterSpec ivSpec) {
-		byte[] cipherText = null;
-		Cipher inCipher;
-		
-		if (useSessionKey) {
-			try {
-				inCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
-				inCipher.init(Cipher.ENCRYPT_MODE, sessionKey, ivSpec);
-				cipherText = inCipher.doFinal(plainText);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		else { // Use public key RSA
-			try {
-				inCipher = Cipher.getInstance("RSA", "BC");
-				inCipher.init(Cipher.ENCRYPT_MODE, my_gs.privateKey, new SecureRandom());
-				System.out.println("plainText length: " + plainText.length);
-				cipherText = inCipher.doFinal(plainText);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		
-		return cipherText;
-	}
-	
-	private ArrayList<Object> getDecryptedPayload(SecureEnvelope envelope, boolean useSessionKey) {
-		// Using this wrapper method in case the envelope changes at all :)
-		IvParameterSpec iv = null;
-		if (envelope.getIV() != null) {
-			iv = new IvParameterSpec(envelope.getIV());
-		}
-		
-		return byteArrayToList(decryptPayload(envelope.getPayload(), iv, useSessionKey));
-	}
-	
-	private byte[] decryptPayload(byte[] cipherText, IvParameterSpec ivSpec, boolean useSessionKey) {
-		Cipher outCipher = null;
-		byte[] plainText = null;
-		
-		if (useSessionKey) {
-			try {
-				outCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
-				outCipher.init(Cipher.DECRYPT_MODE, sessionKey, ivSpec);
-				plainText = outCipher.doFinal(cipherText);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		else {
-			try {
-				outCipher = Cipher.getInstance("RSA", "BC");
-				outCipher.init(Cipher.DECRYPT_MODE, my_gs.privateKey, new SecureRandom());
-				plainText = outCipher.doFinal(cipherText);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		
-		return plainText;
-	}
-	
-	private byte[] listToByteArray(ArrayList<Object> list) {
-		byte[] returnBytes = null;
-		
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutputStream out = null;
-		try {
-		  out = new ObjectOutputStream(bos);   
-		  out.writeObject(list);
-		  returnBytes = bos.toByteArray();
-		  out.close();
-		  bos.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		return returnBytes;
-	}
-	
-	private ArrayList<Object> byteArrayToList(byte[] byteArray) {
-		ArrayList<Object> list = null;
-		
-		ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
-		ObjectInput in = null;
-		try {
-		  in = new ObjectInputStream(bis);
-		  Object object = in.readObject();
-		  list = (ArrayList<Object>)object;
-		  bis.close();
-		  in.close();
-		  
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		return list;
-	}
 	
 	private boolean verifyToken(Token token) {
 		boolean verified = false;

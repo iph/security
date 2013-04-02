@@ -1,3 +1,5 @@
+package cs1653.termproject.clients;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -16,6 +18,10 @@ import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import cs1653.termproject.shared.SecureEnvelope;
+import cs1653.termproject.shared.SecurityUtils;
+import cs1653.termproject.shared.Token;
 
 public class GroupClientThread extends Thread {
 	private GroupClient my_gc;

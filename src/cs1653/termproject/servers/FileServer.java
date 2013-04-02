@@ -1,3 +1,4 @@
+package cs1653.termproject.servers;
 /* FileServer loads files from FileList.bin.  Stores files in shared_files directory. */
 
 import java.io.File;

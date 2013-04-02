@@ -1,9 +1,13 @@
+package cs1653.termproject.clients;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import cs1653.termproject.shared.Token;
 
 /**
  * The ClientController is the layer between the clients and the interface that sits on top.

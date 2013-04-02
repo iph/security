@@ -1,3 +1,4 @@
+package cs1653.termproject.clients;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.GroupLayout.Alignment;

@@ -1,3 +1,4 @@
+package cs1653.termproject.shared;
 import java.util.HashSet;
 
 /**

@@ -1,3 +1,5 @@
+package cs1653.termproject.clients;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -13,6 +15,9 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import cs1653.termproject.shared.SecureEnvelope;
+import cs1653.termproject.shared.SecurityUtils;
 
 public class FileClientThread extends Thread {
 	private FileClient my_fc;
@@ -57,9 +62,9 @@ public class FileClientThread extends Thread {
 					System.out.println("CONNECTION TAMPERING DETECTED!");
 				}
 				
-				System.out.println("hmac is: " + Arrays.toString(hmac));
-				System.out.println("contents is: "+ Arrays.toString(listToByteArray(contents)));
-				System.out.println("Key is..." + Arrays.toString(my_fc.integrityKey.getEncoded()));
+				//System.out.println("hmac is: " + Arrays.toString(hmac));
+				//System.out.println("contents is: "+ Arrays.toString(listToByteArray(contents)));
+				//System.out.println("Key is..." + Arrays.toString(my_fc.integrityKey.getEncoded()));
 				if(hmac == null || !SecurityUtils.checkHMAC(listToByteArray(contents), hmac, my_fc.integrityKey)){
 					my_fc.tamperedConnection = true;
 					System.out.println("CONNECTION TAMPERING DETECTED -- HMAC FAIL!");

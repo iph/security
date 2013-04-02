@@ -1,3 +1,4 @@
+package cs1653.termproject.servers;
 /* This list represents the users on the server */
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

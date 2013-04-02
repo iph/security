@@ -1,4 +1,8 @@
+package cs1653.termproject.clients;
+
 import java.util.List;
+
+import cs1653.termproject.shared.UserToken;
 
 /**
  * Interface describing the operations that must be supported by the

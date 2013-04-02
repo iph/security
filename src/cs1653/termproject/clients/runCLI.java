@@ -1,3 +1,4 @@
+package cs1653.termproject.clients;
 
 public class runCLI {
 	

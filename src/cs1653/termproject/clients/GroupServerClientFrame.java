@@ -1,3 +1,4 @@
+package cs1653.termproject.clients;
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.ActionListener;

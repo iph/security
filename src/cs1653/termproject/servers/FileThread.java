@@ -1,35 +1,29 @@
+package cs1653.termproject.servers;
 /* File worker thread handles the business of uploading, downloading, and removing files for clients with valid tokens */
 
-import java.lang.Thread;
 import java.net.Socket;
 import java.security.Key;
 import java.security.SecureRandom;
 import java.security.Signature;
-import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
-import javax.crypto.spec.IvParameterSpec;
+import cs1653.termproject.shared.Envelope;
+import cs1653.termproject.shared.SecureEnvelope;
+import cs1653.termproject.shared.SecurityUtils;
+import cs1653.termproject.shared.Ticket;
+import cs1653.termproject.shared.Token;
 
-public class FileThread extends Thread
+public class FileThread extends ServerThread
 {
 	private final Socket socket;
 	private FileServer my_fs;
-	private Key sessionKey;
-	private Key integrityKey;
-	private int sequenceNumber;
-	private boolean tamperedConnection;
-	private boolean tamperedToken;
 	private boolean tamperedTicket;
 	private final int threadID;
 
@@ -76,7 +70,7 @@ public class FileThread extends Thread
 					}
 					else {
 						// Get the list from the SecureEnvelope, false because it's NOT using the session key
-						ArrayList<Object> objectList = getDecryptedPayload(secureMessage, false);
+						ArrayList<Object> objectList = getDecryptedPayload(secureMessage, false, my_fs.privateKey);
 						// Make sure it doesn't return null and it has two elements in the list
 						if (!(objectList == null) && (objectList.size() == 2)) {
 							// Grab the session 
@@ -111,7 +105,7 @@ public class FileThread extends Thread
 					}
 				}
 				else {
-					ArrayList<Object> contents = getDecryptedPayload(secureMessage, true);
+					ArrayList<Object> contents = getDecryptedPayload(secureMessage, true, null);
 					String msg = (String)contents.get(0);
 					
 					System.out.println("Request received: " + msg);
@@ -211,7 +205,7 @@ public class FileThread extends Thread
 									output.writeObject(secureResponse);
 
 									secureMessage = (SecureEnvelope)input.readObject();
-									contents = getDecryptedPayload(secureMessage, true);
+									contents = getDecryptedPayload(secureMessage, true, null);
 									msg = (String)contents.get(0);
 									
 									if ((Integer)contents.get(1) == (sequenceNumber + 1)) {
@@ -228,7 +222,7 @@ public class FileThread extends Thread
 										output.writeObject(secureResponse);
 										// Read new SecureEnvelope
 										secureMessage = (SecureEnvelope)input.readObject();
-										contents = getDecryptedPayload(secureMessage, true);
+										contents = getDecryptedPayload(secureMessage, true, null);
 										msg = (String)contents.get(0);
 										
 										if ((Integer)contents.get(1) == (sequenceNumber + 1)) {
@@ -323,7 +317,7 @@ public class FileThread extends Thread
 											output.writeObject(secureResponse);
 			
 											secureMessage = (SecureEnvelope)input.readObject();
-											contents = getDecryptedPayload(secureMessage, true);
+											contents = getDecryptedPayload(secureMessage, true, null);
 											msg = (String)contents.get(0);
 											
 											if ((Integer)contents.get(1) == (sequenceNumber + 1)) {
@@ -343,7 +337,7 @@ public class FileThread extends Thread
 											output.writeObject(secureResponse);
 			
 											secureMessage = (SecureEnvelope)input.readObject();
-											contents = getDecryptedPayload(secureMessage, true);
+											contents = getDecryptedPayload(secureMessage, true, null);
 											msg = (String)contents.get(0);
 											
 											if ((Integer)contents.get(1) == (sequenceNumber + 1)) {
@@ -500,30 +494,11 @@ public class FileThread extends Thread
 		Ticket newTicket = new Ticket("FileServer", threadID);
 		
 		byte[] ticketBytes = newTicket.toByteArray();
-		byte[] signedTicketBytes = signBytes(ticketBytes);
+		byte[] signedTicketBytes = signBytes(ticketBytes, my_fs.privateKey);
 		
 		newTicket.setSignature(signedTicketBytes);
 		
 		return newTicket;
-	}
-	
-	// Sign bytes (for ticket)
-	public byte[] signBytes(byte[] text) {
-		byte[] sigBytes = null;
-		Signature sig = null;
-		
-		System.out.println("Signing bytes...");
-		
-		try {
-			sig = Signature.getInstance("SHA512WithRSAEncryption", "BC");
-			sig.initSign(my_fs.privateKey);
-			sig.update(text);
-			sigBytes = sig.sign();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		return sigBytes;
 	}
 	
 	/*
@@ -575,155 +550,6 @@ public class FileThread extends Thread
 		}
 		
 		return verified;
-	}
-	
-	
-	
-	/* Crypto Related Methods
-	 * 
-	 * These methods will abstract the whole secure session process.
-	 * 
-	 */
-	
-	protected SecureEnvelope makeSecureEnvelope(String msg) {
-		ArrayList<Object> list = new ArrayList<Object>();
-		return makeSecureEnvelope(msg, list);
-	}
-	 
-	protected SecureEnvelope makeSecureEnvelope(String msg, ArrayList<Object> list) {
-		// Make a new envelope
-		SecureEnvelope envelope = new SecureEnvelope();
-		
-		// Create new ivSpec
-		IvParameterSpec ivSpec = new IvParameterSpec(new byte[16]);
-		
-		// Set the ivSpec in the envelope
-		envelope.setIV(ivSpec.getIV());
-		
-		// Increment the sequenceNumber
-		sequenceNumber++;
-		
-		// Add the msg and sequenceNumber to the list
-		list.add(0, sequenceNumber);
-		list.add(0, msg);
-		
-		// Set the payload using the encrypted ArrayList
-		byte[] payloadBytes = listToByteArray(list);
-		byte[] hmac = SecurityUtils.createHMAC(payloadBytes, integrityKey);
-		envelope.setHMAC(hmac);
-		System.out.println("hmac is: " + Arrays.toString(hmac));
-		System.out.println("contents is: "+ Arrays.toString(listToByteArray(list)));
-		//System.out.println("Contents are..." + list);
-		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec));
-		
-		return envelope;
-	}
-	
-	private byte[] encryptPayload(byte[] plainText, boolean useSessionKey, IvParameterSpec ivSpec) {
-		byte[] cipherText = null;
-		Cipher inCipher;
-		
-		if (useSessionKey) {
-			// TODO
-			try {
-				inCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
-				inCipher.init(Cipher.ENCRYPT_MODE, sessionKey, ivSpec);
-				cipherText = inCipher.doFinal(plainText);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		else { // Use public key RSA
-			try {
-				inCipher = Cipher.getInstance("RSA", "BC");
-				inCipher.init(Cipher.ENCRYPT_MODE, my_fs.privateKey, new SecureRandom());
-				System.out.println("plainText length: " + plainText.length);
-				cipherText = inCipher.doFinal(plainText);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		
-		return cipherText;
-	}
-	
-	private ArrayList<Object> getDecryptedPayload(SecureEnvelope envelope, boolean useSessionKey) {
-		// Using this wrapper method in case the envelope changes at all :)
-		IvParameterSpec iv = null;
-		if (envelope.getIV() != null) {
-			iv = new IvParameterSpec(envelope.getIV());
-		}
-		
-		return byteArrayToList(decryptPayload(envelope.getPayload(), iv, useSessionKey));
-	}
-	
-	private byte[] decryptPayload(byte[] cipherText, IvParameterSpec ivSpec, boolean useSessionKey) {
-		Cipher outCipher = null;
-		byte[] plainText = null;
-		
-		if (useSessionKey) {
-			try {
-				outCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
-				outCipher.init(Cipher.DECRYPT_MODE, sessionKey, ivSpec);
-				plainText = outCipher.doFinal(cipherText);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		else {
-			try {
-				outCipher = Cipher.getInstance("RSA", "BC");
-				outCipher.init(Cipher.DECRYPT_MODE, my_fs.privateKey, new SecureRandom());
-				plainText = outCipher.doFinal(cipherText);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		
-		return plainText;
-	}
-	
-	private byte[] listToByteArray(ArrayList<Object> list) {
-		byte[] returnBytes = null;
-		
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutputStream out = null;
-		try {
-		  out = new ObjectOutputStream(bos);   
-		  out.writeObject(list);
-		  returnBytes = bos.toByteArray();
-		  out.close();
-		  bos.close();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return returnBytes;
-	}
-	
-	private ArrayList<Object> byteArrayToList(byte[] byteArray) {
-		ArrayList<Object> list = null;
-		
-		ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
-		ObjectInput in = null;
-		try {
-		  in = new ObjectInputStream(bis);
-		  Object object = in.readObject();
-		  list = (ArrayList<Object>)object;
-		  bis.close();
-		  in.close();
-		  
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return list;
 	}
 	
 	private boolean verifyToken(Token token) {

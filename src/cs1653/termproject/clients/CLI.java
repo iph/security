@@ -1,3 +1,4 @@
+package cs1653.termproject.clients;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Scanner;

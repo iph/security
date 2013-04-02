@@ -1,3 +1,4 @@
+package cs1653.termproject.servers;
 import java.util.*;
 
 public class GroupList implements java.io.Serializable{	

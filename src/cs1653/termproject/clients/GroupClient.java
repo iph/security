@@ -1,4 +1,6 @@
+package cs1653.termproject.clients;
 /* Implements the GroupClient Interface */
+
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -16,6 +18,10 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.util.encoders.Hex;
+
+import cs1653.termproject.shared.SecureEnvelope;
+import cs1653.termproject.shared.Token;
+import cs1653.termproject.shared.UserToken;
 
 public class GroupClient extends Client implements GroupClientInterface {
 

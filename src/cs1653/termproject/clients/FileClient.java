@@ -1,4 +1,6 @@
+package cs1653.termproject.clients;
 /* FileClient provides all the client functionality regarding the file server */
+
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,6 +20,11 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.util.encoders.Base64;
+
+import cs1653.termproject.shared.Envelope;
+import cs1653.termproject.shared.SecureEnvelope;
+import cs1653.termproject.shared.Ticket;
+import cs1653.termproject.shared.UserToken;
 
 public class FileClient extends Client implements FileClientInterface {
 
@@ -163,11 +170,7 @@ public class FileClient extends Client implements FileClientInterface {
 		}
 		else {
 			sessionKey = null;
-			
-			// TODO: Might have to modify this later to have an encrypted disconnect
 			secureDisconnect();
-			//
-			
 			return false;
 		}
 		
@@ -248,10 +251,8 @@ public class FileClient extends Client implements FileClientInterface {
 						plainText = inCipher.update(cipherText, 0, n);
 					}
 					else{
-						plainText = inCipher.update(cipherText, 0, n);
+						plainText = inCipher.doFinal(cipherText, 0, n);
 					}
-					//System.out.println(Arrays.toString((byte[])contents.get(2)));
-					//plainText = inCipher.doFinal((byte[]) contents.get(2), 0, (Integer) contents.get(3));
 				
 					fos.write(plainText, 0, plainText.length);
 					System.out.printf(".");

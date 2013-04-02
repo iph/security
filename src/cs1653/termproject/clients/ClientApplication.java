@@ -1,3 +1,4 @@
+package cs1653.termproject.clients;
 import javax.swing.*;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;

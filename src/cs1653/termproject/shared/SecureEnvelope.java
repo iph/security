@@ -1,6 +1,6 @@
+package cs1653.termproject.shared;
 import java.util.Arrays;
 
-import javax.crypto.spec.IvParameterSpec;
 
 public class SecureEnvelope extends Envelope {
 

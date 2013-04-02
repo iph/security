@@ -1,3 +1,4 @@
+package cs1653.termproject.servers;
 /* Driver program for FileSharing Group Server */
 
 public class RunGroupServer {

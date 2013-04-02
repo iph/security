@@ -1,3 +1,4 @@
+package cs1653.termproject.servers;
 public class ShareFile implements java.io.Serializable, Comparable<ShareFile> {
 
 	/**
