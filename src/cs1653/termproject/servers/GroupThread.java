@@ -531,7 +531,6 @@ public class GroupThread extends ServerThread
 	private UserToken createToken(String username, String password) 
 	{
 		//Check that user exists
-		System.out.println(password);
 		if(my_gs.userList.checkUserPassword(username, password))
 		{
 			//Issue a new token with server's name, user's name, and user's groups

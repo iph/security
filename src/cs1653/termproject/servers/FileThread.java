@@ -362,9 +362,7 @@ public class FileThread extends ServerThread
 										fis.close();
 									}
 								}
-								catch(Exception e1)
-								{
-									System.err.println("Error: " + e1.getMessage());
+								catch(Exception e1) {
 									e1.printStackTrace(System.err);
 		
 								}
@@ -395,8 +393,7 @@ public class FileThread extends ServerThread
 								secureResponse = makeSecureEnvelope("FAIL-ERROR_PERMISSION");
 							}
 							else {
-								try
-								{
+								try {
 									File f = new File("shared_files/"+"_"+remotePath.replace('/', '_'));
 		
 									if (!f.exists()) {
@@ -523,7 +520,7 @@ public class FileThread extends ServerThread
 		ticketBytes = ticket.toByteArray();
 		sigBytes = ticket.getSignature();
 		
-		System.out.println("Verifying token...");
+		System.out.println("Verifying ticket...");
 		
 		if (ticket.getThreadID() == threadID) {
 			

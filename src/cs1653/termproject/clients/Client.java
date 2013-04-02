@@ -19,11 +19,12 @@ import javax.crypto.spec.IvParameterSpec;
 
 import cs1653.termproject.shared.Envelope;
 
+/**
+ * Client is the base class for GroupClient and FileClient. It holds the encryption/decryption/envelope methods.
+ * @author Sean and Matt
+ *
+ */
 public abstract class Client {
-
-	/* protected keyword is like private but subclasses have access
-	 * Socket and input/output streams
-	 */
 	protected Socket sock;
 	protected ObjectOutputStream output;
 	protected ObjectInputStream input;
@@ -37,6 +38,12 @@ public abstract class Client {
 	protected int sequenceNumber;
 	protected boolean tamperedConnection;
 
+	/**
+	 * Connect to a server.
+	 * @param server Address of the server to connect to
+	 * @param port Port of the server to connect to
+	 * @return True if connected, successfully, otherwise false
+	 */
 	public boolean connect(final String server, final int port) {
 		System.out.println("attempting to connect");
 
@@ -56,16 +63,30 @@ public abstract class Client {
 		}
 	}
 	
+	/**
+	 * Connect to a server using previously initialized variables (due to constructor).
+	 * @return True if connected, successfully, otherwise false
+	 */
 	public boolean connect() {
 		return connect(myServer, myPort);
 	}
 	
-	public Client (String inputServer, int inputPort, ClientController _controller) {
-		myServer = inputServer;
-		myPort = inputPort;
+	/**
+	 * Constructor for the client instance.
+	 * @param server Address of the server to connect to later
+	 * @param port Port of the server to connect to later
+	 * @param _controller ClientController that is maintaining this client
+	 */
+	public Client (String server, int port, ClientController _controller) {
+		myServer = server;
+		myPort = port;
 		controller = _controller;
 	}
 
+	/**
+	 * Check the state of the client socket.
+	 * @return True if the socket it connected, false if not
+	 */
 	public boolean isConnected() {
 		if (sock == null || !sock.isConnected()) {
 			return false;
@@ -75,6 +96,9 @@ public abstract class Client {
 		}
 	}
 
+	/**
+	 * Perform an unsecure disconnection from the server.
+	 */
 	public void disconnect() {
 		if (isConnected()) {
 			try
@@ -90,6 +114,9 @@ public abstract class Client {
 		}
 	}
 	
+	/**
+	 * Perform a secure disconnection (encrypted messages) from the server.
+	 */
 	public void secureDisconnect() {
 		if (isConnected()) {
 			try {
@@ -104,18 +131,26 @@ public abstract class Client {
 	}
 	
 	
-	/* Crypto Related Methods
-	 * 
-	 * These methods will abstract the whole secure session process.
-	 * 
+	/* ******************************
+	 * Crypto Related Methods
+	 ****************************** */
+
+	/**
+	 * Creates a SecureEnvelope with just a message in it. Serves as a wrapper for the more detailed method.
+	 * @param msg The msg for the SecureEnvelope
+	 * @return SecureEnvelope ready to send
 	 */
-	
-	// Wrap the other makeSecureEnvelope message by passing an empty list
 	protected SecureEnvelope makeSecureEnvelope(String msg) {
 		ArrayList<Object> list = new ArrayList<Object>();
 		return makeSecureEnvelope(msg, list);
 	}
-	 
+	
+	/**
+	 * Creates a SecureEnvelope based on a msg and a list of Objects. The msg and a sequence number are added to the payload implicitly.
+	 * @param msg The msg of the SecureEnvelope
+	 * @param list The list of Objects to be added to the SecureEnvelope
+	 * @return SecureEnvelope ready to send
+	 */
 	protected SecureEnvelope makeSecureEnvelope(String msg, ArrayList<Object> list) {
 		// Make a new envelope
 		SecureEnvelope envelope = new SecureEnvelope();
@@ -133,15 +168,25 @@ public abstract class Client {
 		list.add(0, sequenceNumber);
 		list.add(0, msg);
 		
-		// Set the payload using the encrypted ArrayList
+		// Get the byte[] conversion of the payload list
 		byte[] payloadBytes = listToByteArray(list);
+		// Generate an HMAC for the message
 		byte[] hmac = SecurityUtils.createHMAC(payloadBytes, integrityKey);
+		// Set the HMAC in the envelope
 		envelope.setHMAC(hmac);
+		// Set the payload to the encrypted byte[] of the list
 		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec));
 				
 		return envelope;
 	}
 	
+	/**
+	 * Method to encrypt a payload of a SecureEnvelope.
+	 * @param plainText Unencrypted byte[] plain text payload
+	 * @param useSessionKey True to use the session key, false to use the PublicKey
+	 * @param ivSpec The random IV to use for the session key option
+	 * @return byte[] of encrypted payload data
+	 */
 	protected byte[] encryptPayload(byte[] plainText, boolean useSessionKey, IvParameterSpec ivSpec) {
 		byte[] cipherText = null;
 		Cipher inCipher;
@@ -169,11 +214,21 @@ public abstract class Client {
 		return cipherText;
 	}
 	
+	/**
+	 * Decrypts the payload of the SecureEnvelope that was passed in and returns the plain text data.
+	 * @param envelope SecureEnvelope whose payload to decrypt
+	 * @return ArrayList<Object> containing the decrypted payload
+	 */
 	protected ArrayList<Object> getDecryptedPayload(SecureEnvelope envelope) {
-		// Using this wrapper method in case the envelope changes at all :)
 		return byteArrayToList(decryptPayload(envelope.getPayload(), new IvParameterSpec(envelope.getIV())));
 	}
 	
+	/**
+	 * Decrypts a payload of encrypted data into a plain text byte[].
+	 * @param cipherText The byte[] of encrypted data
+	 * @param ivSpec The IV to use for decryption
+	 * @return byte[] containng the decrypted payload
+	 */
 	private byte[] decryptPayload(byte[] cipherText, IvParameterSpec ivSpec) {
 		Cipher outCipher = null;
 		byte[] plainText = null;
@@ -189,6 +244,11 @@ public abstract class Client {
 		return plainText;
 	}
 	
+	/**
+	 * Turns a list into a byte[] for encryption.
+	 * @param list The list to convert to a byte[]
+	 * @return byte[] of the converted list
+	 */
 	protected byte[] listToByteArray(ArrayList<Object> list) {
 		byte[] returnBytes = null;
 		
@@ -207,6 +267,11 @@ public abstract class Client {
 		return returnBytes;
 	}
 	
+	/**
+	 * Turns a byte[] back into an ArrayList<Object>.
+	 * @param byteArray The byte[] to convert to a ArrayList<Object>
+	 * @return ArrayList<Object> of the converted list
+	 */
 	private ArrayList<Object> byteArrayToList(byte[] byteArray) {
 		ArrayList<Object> list = null;
 		

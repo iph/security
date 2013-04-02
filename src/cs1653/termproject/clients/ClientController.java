@@ -7,6 +7,8 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.commons.collections.map.MultiKeyMap;
+
 import cs1653.termproject.shared.Token;
 
 /**
@@ -24,6 +26,17 @@ public class ClientController {
 	private FileClient fClient;
 	// Hold the token information.
 	private Token token;
+	// Hold the current upload key
+	private SecretKeySpec currentKey;
+	// Hold the current seed
+	private byte[] currentSeed;
+	// Hold the current keyID
+	private int currentKeyID;
+	// Number of uses left of the currentKey
+	private int keyUses;
+	// Holds the cached file keys
+	private MultiKeyMap keyCache;
+	
 	
 	/**
 	 * Default constructor. Set all fields to null.
@@ -32,6 +45,10 @@ public class ClientController {
 		gClient = null;
 		fClient = null;
 		token = null;
+		currentKey = null;
+		currentSeed = null;
+		currentKeyID = -1;
+		keyCache = null;
 	}
 	
 	/**
@@ -301,6 +318,15 @@ public class ClientController {
 			clientConnect = fClient.connect();
 		}
 		
+		// Set up keyCache
+		keyCache = new MultiKeyMap();
+		// Clear keyUses
+		keyUses = 0;
+		// Clear currentKey, currentSeed, currentKeyID
+		currentSeed = null;
+		currentKeyID = -1;
+		currentKey = null;
+		
 		return clientConnect;
 	}
 	
@@ -349,18 +375,47 @@ public class ClientController {
 		
 		// First verify no null values were passed
 		if ((sourceFile != null) && (destFile != null) && (group != null)){
-	
+			SecretKeySpec keyToUse = null;
+			int keyIDToUse = -1;
+			byte[] seedToUse = null;
 			// Need to first get group server keys.
 			
 			// TODO: save seed, keyid and key
-			ArrayList<Object> list = gClient.getNewFileKey(group, token);
-			System.out.println(list.get(2).toString());
-
-			// Make sure that the list is correct.
-			if (list != null && (!((String)(list.get(0))).equals("OK")) && list.size() != 5) {
-				return false;
+			ArrayList<Object> list = null;
+			
+			// First, check to see if the currentKey has any more uses
+			if (keyUses > 0) {
+				keyToUse = currentKey;
+				keyIDToUse = currentKeyID;
+				seedToUse = currentSeed;
+				keyUses--;
 			}
-			fileUploaded = fClient.upload(sourceFile, destFile, group, token, (SecretKeySpec) list.get(2), (byte[]) list.get(3), (Integer) list.get(4));
+			else { // Else you need a new key
+				list = gClient.getNewFileKey(group, token);
+				
+				// Make sure that the list is correct.
+				if (list != null && (!((String)(list.get(0))).equals("OK")) && list.size() != 5) {
+					return false;
+				}
+				// Set the key to use to the new key
+				keyToUse = (SecretKeySpec) list.get(2);
+				keyIDToUse = (Integer) list.get(4);
+				seedToUse = (byte[]) list.get(3);
+				// Set to 100 minus this current use
+				keyUses = 99;
+				// Also update the cached values
+				currentKey = keyToUse;
+				currentKeyID = keyIDToUse;
+				currentSeed = seedToUse;
+				
+				// Add new key to cache as well
+				keyCache.put(keyIDToUse, group, seedToUse, currentKey); // keyID, group, seed, SecretKeySpec
+			}
+			
+			System.out.println("keyToUse: " + keyToUse.toString());
+			System.out.println("keyUses: " + keyUses);
+
+			fileUploaded = fClient.upload(sourceFile, destFile, group, token, keyToUse, seedToUse, keyIDToUse);
 		}
 		
 		return fileUploaded;
@@ -372,15 +427,33 @@ public class ClientController {
 	
 	public boolean downloadFile(String sourceFile, String destFile) {
 		boolean fileDownloaded = false;
+		SecretKeySpec keyToUse = null;
 		
 		if ((sourceFile != null) && (destFile != null)){
 			List<Object> list= fClient.getFileInfo(sourceFile, token);
 			if(list != null && list.size() != 6){
 				return false;
 			}
-			SecretKeySpec key = gClient.getFileKey((byte[])list.get(3), (Integer)list.get(4), (String)list.get(5), token);
-			System.out.println(key.toString());
-			fileDownloaded = fClient.download(sourceFile, destFile, token, key, (byte[])list.get(2));
+			
+			// Check if the key is in the cache first
+			if (keyCache.containsKey((Integer)list.get(4), (String)list.get(5), (byte[])list.get(3))) { // keyID, group, seed
+				System.out.println("Cache hit!");
+				keyToUse = (SecretKeySpec) keyCache.get((Integer)list.get(4), (String)list.get(5), (byte[])list.get(3));
+			}
+			else { // Get it from the group server
+				System.out.println("Cache miss!");
+				keyToUse = gClient.getFileKey((byte[])list.get(3), (Integer)list.get(4), (String)list.get(5), token);
+				
+				if (keyToUse == null) { // If the key being asked for is not something the client should have access to, it will be null
+					return false;
+				}
+				
+				// Add the key to cache as well
+				keyCache.put((Integer) list.get(4), (String)list.get(5), (byte[]) list.get(3), keyToUse); // keyID, group, seed, SecretKeySpec
+			}
+			
+			System.out.println("keyToUse: " + keyToUse.toString());
+			fileDownloaded = fClient.download(sourceFile, destFile, token, keyToUse, (byte[])list.get(2));
 		}
 		
 		return fileDownloaded;

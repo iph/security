@@ -92,21 +92,20 @@ public abstract class ServerThread extends Thread {
 		list.add(0, sequenceNumber);
 		list.add(0, msg);
 		
-		// Set the payload using the encrypted ArrayList
-		// Set the payload using the encrypted ArrayList
+		// Get the byte[] conversion of the payload list
 		byte[] payloadBytes = listToByteArray(list);
+		// Generate an HMAC for the message
 		byte[] hmac = SecurityUtils.createHMAC(payloadBytes, integrityKey);
+		// Set the HMAC in the envelope
 		envelope.setHMAC(hmac);
-		System.out.println("hmac is: " + Arrays.toString(hmac));
-		System.out.println("contents is: "+ Arrays.toString(listToByteArray(list)));
-		//System.out.println("Contents are..." + list);
+		// Set the payload to the encrypted byte[] of the list
 		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec, null));
 		
 		return envelope;
 	}
 	
 	/**
-	 * Helper method to encrypt a payload of a SecureEnvelope.
+	 * Method to encrypt a payload of a SecureEnvelope.
 	 * @param plainText Unencrypted byte[] plain text payload
 	 * @param useSessionKey True to use the session key, false to use the PrivateKey provided (NOT recommended)
 	 * @param ivSpec The random IV to use for the session key option
@@ -148,7 +147,6 @@ public abstract class ServerThread extends Thread {
 	 * @return ArrayList<Object> containing the decrypted payload
 	 */
 	protected ArrayList<Object> getDecryptedPayload(SecureEnvelope envelope, boolean useSessionKey, PrivateKey privateKey) {
-		// Using this wrapper method in case the envelope changes at all :)
 		IvParameterSpec iv = null;
 		if (envelope.getIV() != null) {
 			iv = new IvParameterSpec(envelope.getIV());
@@ -216,7 +214,7 @@ public abstract class ServerThread extends Thread {
 	
 	/**
 	 * Turns a byte[] back into an ArrayList<Object>.
-	 * @param byteArray The byte[] to conver to a ArrayList<Object>
+	 * @param byteArray The byte[] to convert to a ArrayList<Object>
 	 * @return ArrayList<Object> of the converted list
 	 */
 	protected ArrayList<Object> byteArrayToList(byte[] byteArray) {

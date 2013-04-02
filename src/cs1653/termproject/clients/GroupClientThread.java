@@ -67,9 +67,9 @@ public class GroupClientThread extends Thread {
 					my_gc.tamperedConnection = true;
 					System.out.println("CONNECTION TAMPERING DETECTED!");
 				}
-				System.out.println("hmac is: " + Arrays.toString(hmac));
-				System.out.println("contents is: "+ Arrays.toString(listToByteArray(contents)));
-				System.out.println("Key is..." + Arrays.toString(my_gc.integrityKey.getEncoded()));
+				//System.out.println("hmac is: " + Arrays.toString(hmac));
+				//System.out.println("contents is: "+ Arrays.toString(listToByteArray(contents)));
+				//System.out.println("Key is..." + Arrays.toString(my_gc.integrityKey.getEncoded()));
 				if(hmac == null || !SecurityUtils.checkHMAC(listToByteArray(contents), hmac, my_gc.integrityKey)){
 					my_gc.tamperedConnection = true;
 					System.out.println("CONNECTION TAMPERING DETECTED -- HMAC FAIL!");
