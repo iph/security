@@ -1,0 +1,22 @@
+Compilation and Usage Instructions:
+
+For Linux, Windows, and OS X, scripts have been provided that make compiling an automated process!
+
+----------
+LINUX/OS X
+----------
+
+To use any of the bash scripts, verify that the permissions on the scripts are set to executable.
+
+To compile, run the "linux-compile.sh" script. The output will be in the bin directory.
+
+To run any of the servers/client, just be inside the bin directory and run the desired "linux-*.sh" script.
+
+----------
+ WINDOWS
+----------
+
+To compile, run the "windows-compile.bat" batch script. The output will be in the bin directory.
+
+To run any of the servers/client, just be inside the bin directory and run the desired "windows-*.bat" batch script.
+
