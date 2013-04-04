@@ -1,4 +1,5 @@
 package cs1653.termproject.shared;
+
 import java.util.HashSet;
 
 /**
@@ -10,63 +11,56 @@ import java.util.HashSet;
  * server.
  *
  */
-public interface UserToken
-{
-	
+public interface UserToken {
 	/**
 	 * 
 	 * @param signature_ The signature as a byte array
 	 */
 	public void setSignature(byte[] signature_);
-	
+
 	/**
 	 * 
 	 * @return The signature as a byte array
 	 */
 	public byte[] getSignature();
-	
+
 	/**
 	 * 
 	 * @return The token data as a byte array
 	 */
 	public byte[] toByteArray();
-	
-	
-	
-    /**
-     * This method should return a string describing the issuer of
-     * this token.  This string identifies the group server that
-     * created this token.  For instance, if "Alice" requests a token
-     * from the group server "Server1", this method will return the
-     * string "Server1".
-     *
-     * @return The issuer of this token
-     *
-     */
-    public String getIssuer();
 
+	/**
+	 * This method should return a string describing the issuer of
+	 * this token.  This string identifies the group server that
+	 * created this token.  For instance, if "Alice" requests a token
+	 * from the group server "Server1", this method will return the
+	 * string "Server1".
+	 *
+	 * @return The issuer of this token
+	 *
+	 */
+	public String getIssuer();
 
-    /**
-     * This method should return a string indicating the name of the
-     * subject of the token.  For instance, if "Alice" requests a
-     * token from the group server "Server1", this method will return
-     * the string "Alice".
-     *
-     * @return The subject of this token
-     *
-     */
-    public String getSubject();
+	/**
+	 * This method should return a string indicating the name of the
+	 * subject of the token.  For instance, if "Alice" requests a
+	 * token from the group server "Server1", this method will return
+	 * the string "Alice".
+	 *
+	 * @return The subject of this token
+	 *
+	 */
+	public String getSubject();
 
-
-    /**
-     * This method extracts the list of groups that the owner of this
-     * token has access to.  If "Alice" is a member of the groups "G1"
-     * and "G2" defined at the group server "Server1", this method
-     * will return ["G1", "G2"].
-     *
-     * @return The HashSet of group memberships encoded in this token
-     *
-     */
-    public HashSet<String> getGroups();
-
-}   //-- end interface UserToken
+	/**
+	 * This method extracts the list of groups that the owner of this
+	 * token has access to.  If "Alice" is a member of the groups "G1"
+	 * and "G2" defined at the group server "Server1", this method
+	 * will return ["G1", "G2"].
+	 *
+	 * @return The HashSet of group memberships encoded in this token
+	 *
+	 */
+	public HashSet<String> getGroups();
+}

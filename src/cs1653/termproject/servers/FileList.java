@@ -1,66 +1,38 @@
 package cs1653.termproject.servers;
-/* T
- * his list represents the files on the server */
-import java.util.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 
-	public class FileList implements java.io.Serializable {
-		
-	/*Serializable so it can be stored in a file for persistence */
+public class FileList implements java.io.Serializable {
 	private static final long serialVersionUID = -8911161283900260136L;
-	//private ArrayList<ShareFile> list;
 	// Have to use a map instead of a set because files are tracked by path, not by ShareFile instance
 	private HashMap<String,ShareFile> fileMap;
-	
-	public FileList()
-	{
-		//list = new ArrayList<ShareFile>();
+
+	public FileList() {
 		fileMap = new HashMap<String,ShareFile>();
 	}
-	
-	public synchronized void addFile(String owner, String group, String path, byte[] iv, byte[] seed, int keyId)
-	{
+
+	public synchronized void addFile(String owner, String group, String path, byte[] iv, byte[] seed, int keyId) {
 		ShareFile newFile = new ShareFile(owner, group, path, iv, seed, keyId);
-		//list.add(newFile);
 		fileMap.put(path, newFile);
 	}
-	
-	public synchronized void removeFile(String path)
-	{
-		//for (int i = 0; i < list.size(); i++) {
-		//	if (list.get(i).getPath().compareTo(path)==0) {
-		//		list.remove(i);
-		//	}
-		//}
+
+	public synchronized void removeFile(String path) {
 		fileMap.remove(path);
 	}
-	
-	public synchronized boolean checkFile(String path)
-	{
-		//for (int i = 0; i < list.size(); i++) {
-		//	if (list.get(i).getPath().compareTo(path)==0) {
-		//		return true;
-		//	}
-		//}
+
+	public synchronized boolean checkFile(String path) {
 		return fileMap.containsKey(path);
-		//return false;
 	}
-	
-	public synchronized ArrayList<ShareFile> getFiles()
-	{
+
+	public synchronized ArrayList<ShareFile> getFiles() {
 		ArrayList<ShareFile> list = new ArrayList<ShareFile>(fileMap.values());
 		Collections.sort(list);
 		return list;			
 	}
-	
-	public synchronized ShareFile getFile(String path)
-	{
-		//for (int i = 0; i < list.size(); i++) {
-		//	if (list.get(i).getPath().compareTo(path)==0) {
-		//		return list.get(i);
-		//	}
-		//}
+
+	public synchronized ShareFile getFile(String path) {
 		return fileMap.get(path);
-		//return null;
 	}
 }	

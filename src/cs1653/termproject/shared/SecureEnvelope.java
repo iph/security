@@ -1,14 +1,18 @@
 package cs1653.termproject.shared;
+
 import java.util.Arrays;
 
-
+/**
+ * SecureEnvelope extends Envelope and is used for encrypted communication. 
+ * @author Sean and Matt
+ *
+ */
 public class SecureEnvelope extends Envelope {
 
 	private static final long serialVersionUID = 200L;
-	private byte[] payload;
-	// IvParameterSpec is not serializable, thus a byte[] is used
-	private byte[] ivSpec;
-	private byte[] hmac;
+	private byte[] payload; // Encrypted data in byte[] form
+	private byte[] ivSpec; // IvParameterSpec is not serializable, thus a byte[] is used
+	private byte[] hmac; // HMAC of the payload
 	
 	public SecureEnvelope(String text) {
 		super(text);
@@ -29,7 +33,6 @@ public class SecureEnvelope extends Envelope {
 	}
 	
 	public byte[] getPayload() {
-		//return Arrays.copyOf(payload, payload.length);
 		return payload;
 	}
 	

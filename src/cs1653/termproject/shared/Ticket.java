@@ -1,15 +1,15 @@
 package cs1653.termproject.shared;
+
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
 
-
 /**
  * The Ticket is an access token specific to file servers. It is given out upon connecting to a file server.
  * A ticket is specific to a file server session (aka a specific thread) and thus cannot be used outside of that session. 
  * A Ticket MUST be used with a proper Token to perform actions on a file server.
- * @author Matt
+ * @author Sean and Matt
  *
  */
 public class Ticket implements Serializable {
@@ -18,20 +18,20 @@ public class Ticket implements Serializable {
 	private String issuer;
 	private int threadID;
 	private byte[] signature;
-	
+
 	public Ticket(String issuer_, int threadID_) {
 		issuer = issuer_;
 		threadID = threadID_;
 	}
-	
+
 	public String getIssuer() {
 		return issuer;
 	}
-	
+
 	public int getThreadID() {
 		return threadID;
 	}
-	
+
 	public void setSignature(byte[] signature_) {
 		signature = Arrays.copyOf(signature_, signature_.length);
 	}
@@ -39,10 +39,10 @@ public class Ticket implements Serializable {
 	public byte[] getSignature() {
 		return signature;
 	}
-	
+
 	public byte[] toByteArray() {
 		byte[] returnBytes = null;
-				
+
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutputStream out = null;
 		try {
@@ -57,13 +57,13 @@ public class Ticket implements Serializable {
 		}
 
 		return returnBytes;
-	 }
-	
+	}
+
 	public String toString() {
-    	return new StringBuilder()
-    	.append("Token Information:")
+		return new StringBuilder()
+		.append("Token Information:")
 		.append("\nIssuer: " + issuer) 
 		.append("\nthreadID: " + threadID).toString();
-    }
-	
+	}
+
 }

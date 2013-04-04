@@ -1,15 +1,22 @@
 package cs1653.termproject.shared;
+
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.*;
 
+/**
+ * Implementation of the UserToken interface.
+ * @author Sean and Matt
+ *
+ */
 public class Token implements UserToken, Serializable {
 	private static final long serialVersionUID = 1337L;
-	private String issuer, subject;
-	private int threadID;
-	private HashSet<String> groups;
-	private byte[] signature;
+	private String issuer; // The issuer of the token
+	private String subject; // The subject (user/client) of the token
+	private int threadID; // Server-side threadID
+	private HashSet<String> groups; // Groups the user is a member of
+	private byte[] signature; // Signed hash of the token
 
 	public Token(String issuer_, String subject_, HashSet<String> groups_){
 		issuer = issuer_;
@@ -17,11 +24,6 @@ public class Token implements UserToken, Serializable {
 		groups = groups_;
 	}
 
-	//public Token(String issuer_, String subject_, HashSet<String> groups_, byte[] signature_) {
-	//	this(issuer_, subject_, groups_);
-	//	signature = Arrays.copyOf(signature_, signature_.length);
-	//}
-	
 	public Token(String issuer_, String subject_, HashSet<String> groups_, int threadID_) {
 		this(issuer_, subject_, groups_);
 		threadID = threadID_;
@@ -30,7 +32,7 @@ public class Token implements UserToken, Serializable {
 	public String getIssuer() {
 		return issuer;
 	}
-	
+
 	public int getThreadID() {
 		return threadID;
 	}
@@ -43,9 +45,14 @@ public class Token implements UserToken, Serializable {
 		return signature;
 	}
 
+	/**
+	 * Converts the issuer, subject, group membership, and threadID into a byte[].
+	 * This is used since Serializing may be unpredictable otherwise.
+	 * @return byte[] containing the byte representation of the data.
+	 */
 	public byte[] toByteArray() {
 		byte[] returnBytes = null;
-				
+
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutputStream out = null;
 		try {
@@ -58,51 +65,48 @@ public class Token implements UserToken, Serializable {
 			out.close();
 			bos.close();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		return returnBytes;
-	 }
+	}
 
+	/**
+	 * This method should return a string indicating the name of the
+	 * subject of the token.  For instance, if "Alice" requests a
+	 * token from the group server "Server1", this method will return
+	 * the string "Alice".
+	 *
+	 * @return The subject of this token
+	 *
+	 */
+	public String getSubject(){
 
-    /**
-     * This method should return a string indicating the name of the
-     * subject of the token.  For instance, if "Alice" requests a
-     * token from the group server "Server1", this method will return
-     * the string "Alice".
-     *
-     * @return The subject of this token
-     *
-     */
-    public String getSubject(){
+		return subject;
+	}
 
-    	return subject;
-    }
+	/**
+	 * This method extracts the list of groups that the owner of this
+	 * token has access to.  If "Alice" is a member of the groups "G1"
+	 * and "G2" defined at the group server "Server1", this method
+	 * will return ["G1", "G2"].
+	 *
+	 * @return The list of group memberships encoded in this token
+	 *
+	 */
+	public HashSet<String> getGroups(){
 
+		return groups;
+	}
 
-    /**
-     * This method extracts the list of groups that the owner of this
-     * token has access to.  If "Alice" is a member of the groups "G1"
-     * and "G2" defined at the group server "Server1", this method
-     * will return ["G1", "G2"].
-     *
-     * @return The list of group memberships encoded in this token
-     *
-     */
-    public HashSet<String> getGroups(){
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
 
-    	return groups;
-    }
-    
-    public String toString() {
-    	StringBuilder builder = new StringBuilder();
-    	
-    	builder.append("Token Information:" +
-    			"\nIssuer: " + issuer + 
-    			"\nSubject: " + subject +
-    			"\nGroups: " + groups);
-    	
-    	return builder.toString();
-    }
+		builder.append("Token Information:" +
+				"\nIssuer: " + issuer + 
+				"\nSubject: " + subject +
+				"\nGroups: " + groups);
+
+		return builder.toString();
+	}
 }

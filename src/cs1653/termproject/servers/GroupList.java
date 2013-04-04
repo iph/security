@@ -2,9 +2,8 @@ package cs1653.termproject.servers;
 import java.util.*;
 
 public class GroupList implements java.io.Serializable{	
-	
+
 	private static final long serialVersionUID = 8472291674451045025L;
-	
 	private HashMap<String, Group> list;
 
 	public GroupList(){
@@ -27,7 +26,7 @@ public class GroupList implements java.io.Serializable{
 	public synchronized boolean isOwner(String groupname, String user){
 		return checkGroup(groupname) && list.get(groupname).isOwner(user);
 	}
-	
+
 	public synchronized boolean isMember(String groupname, String user){
 		return checkGroup(groupname) && list.get(groupname).isMember(user);
 	}
@@ -48,14 +47,14 @@ public class GroupList implements java.io.Serializable{
 			return false;
 		}
 	}
-	
+
 	public synchronized boolean removeOwner(String groupname, String user){
-	    if ((list.containsKey(groupname)) && (list.get(groupname).isOwner(user))) {
-		    return list.get(groupname).removeOwner(user);
-	    }
-	    else {
-		    return false;
-	    }
+		if ((list.containsKey(groupname)) && (list.get(groupname).isOwner(user))) {
+			return list.get(groupname).removeOwner(user);
+		}
+		else {
+			return false;
+		}
 	}
 
 	public synchronized boolean addMember(String groupname, String user){
@@ -65,25 +64,25 @@ public class GroupList implements java.io.Serializable{
 	public synchronized boolean addOwner(String groupname, String user){
 		return list.get(groupname).addOwner(user);
 	}
-	
+
 	public synchronized boolean removeAllMembers(String groupname) {
 		if (list.containsKey(groupname)) {
 			list.get(groupname).removeAllUsers();
 			return true;	
 		}
-		
+
 		return false;
 	}
-	
+
 	public synchronized boolean isOnlyOwner (String groupname, String username) {
 		return checkGroup(groupname) && list.get(groupname).isOnlyOwner(username);
 	}
 }
 
 class Group implements java.io.Serializable{
-	
+
 	private static final long serialVersionUID = -8293900391158968283L;
-	
+
 	Set<String> users;
 	Set<String> owners;	
 
@@ -114,7 +113,7 @@ class Group implements java.io.Serializable{
 	public boolean removeOwner(String username) {
 		return owners.remove(username);
 	}
-	
+
 	public void removeAllUsers() {
 		users.clear();
 	}
@@ -122,11 +121,11 @@ class Group implements java.io.Serializable{
 	public boolean isOwner(String username){
 		return owners.contains(username);
 	}
-	
+
 	public boolean isMember(String username){
 		return users.contains(username);
 	}
-	
+
 	public boolean isOnlyOwner(String username) {
 		if ((owners.contains(username)) && (owners.size() == 1)) {
 			return true;

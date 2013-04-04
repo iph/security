@@ -1,6 +1,4 @@
 package cs1653.termproject.clients;
-/* FileClient provides all the client functionality regarding the file server */
-
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,19 +11,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-
 import org.bouncycastle.util.encoders.Base64;
-
 import cs1653.termproject.shared.Envelope;
 import cs1653.termproject.shared.SecureEnvelope;
 import cs1653.termproject.shared.Ticket;
 import cs1653.termproject.shared.UserToken;
 
+/**
+ * FileClient provides all the client functionality regarding the file server 
+ * @author Sean and Matt
+ *
+ */
 public class FileClient extends Client implements FileClientInterface {
 
 	private String fingerprint; // Printable version of FS's public key :)

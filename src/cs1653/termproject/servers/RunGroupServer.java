@@ -1,8 +1,11 @@
 package cs1653.termproject.servers;
-/* Driver program for FileSharing Group Server */
 
+/**
+ * Driver program for running the Group Server.
+ * @author Sean and Matt
+ *
+ */
 public class RunGroupServer {
-	
 	public static void main(String[] args) {
 		if (args.length> 0) {
 			try {

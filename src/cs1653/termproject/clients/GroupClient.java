@@ -1,34 +1,29 @@
 package cs1653.termproject.clients;
-/* Implements the GroupClient Interface */
 
-
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.security.Key;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
-
 import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.util.encoders.Hex;
-
 import cs1653.termproject.shared.SecureEnvelope;
 import cs1653.termproject.shared.Token;
 import cs1653.termproject.shared.UserToken;
 
+/**
+ * Implements the GroupClient Interface 
+ * @author Sean and Matt
+ *
+ */
 public class GroupClient extends Client implements GroupClientInterface {
-
 	protected X509Certificate cert;
 	protected GroupClientThread gcThread;
 	protected ArrayBlockingQueue<Object> inputQueue;
-	
 
 	public GroupClient(String inputServer, int inputPort, ClientController _cc) {
 		super(inputServer, inputPort, _cc);
@@ -111,26 +106,18 @@ public class GroupClient extends Client implements GroupClientInterface {
 			return true;
 		} else {
 			sessionKey = null;
-
-			//
-			// TODO: Might have to modify this later to have an encrypted
-			// disconnect
 			secureDisconnect();
-			//
-
 			return false;
 		}
 	}
 
-	// This gets called by the internal thread to update the token in the
-	// controller.
+	// This gets called by the internal thread to update the token in the controller.
 	public boolean updateToken(Token _token) {
 		return controller.updateToken(_token);
 	}
 
 	private int beginSession(ArrayList<Object> list) {
 		try {
-			// Envelope message = null, response = null;
 			SecureEnvelope secureMessage = null;
 			SecureEnvelope secureResponse = null;
 
@@ -174,11 +161,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 	public Token getToken(String username, String password) {
 		try {
 			Token token = null;
-			// Envelope message = null, response = null;
 			SecureEnvelope secureMessage = null;
 
-			// Make a temporary ArrayList which which be converted to a byte
-			// array
+			// Make a temporary ArrayList which which be converted to a byte array
 			ArrayList<Object> list = new ArrayList<Object>();
 
 			// Add the username
@@ -192,12 +177,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 			output.writeObject(secureMessage);
 
 			// Get the response from the server
-			//secureResponse = (SecureEnvelope) input.readObject();
-			//secureResponse = (SecureEnvelope)inputQueue.take();
 			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
 			
 			// Successful response
-			//if (secureResponse.getMessage().equals("OK")) {
 			if (((String)(tempList.get(0))).equals("OK")) {
 				// If there is a token in the SecureEnvelope, return it
 				if (tempList.size() == 3) {
@@ -223,9 +205,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 			list.add(token);
 			secureMessage = makeSecureEnvelope("CUSER", list);
 			output.writeObject(secureMessage);
-
-			//secureResponse = (SecureEnvelope) input.readObject();
-			//secureResponse = (SecureEnvelope)inputQueue.take();
 			
 			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
 
@@ -251,8 +230,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 			secureMessage = makeSecureEnvelope("DUSER", list);
 			output.writeObject(secureMessage);
 
-			//secureResponse = (SecureEnvelope) input.readObject();
-			//secureResponse = (SecureEnvelope)inputQueue.take();
 			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
 
 			// If server indicates success, return true
@@ -277,8 +254,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 			secureMessage = makeSecureEnvelope("CGROUP", list);
 			output.writeObject(secureMessage);
 
-			//secureResponse = (SecureEnvelope) input.readObject();
-			//secureResponse = (SecureEnvelope)inputQueue.take();
 			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
 
 			// If server indicates success, return true
@@ -303,8 +278,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 			secureMessage = makeSecureEnvelope("DGROUP", list);
 			output.writeObject(secureMessage);
 
-			//secureResponse = (SecureEnvelope) input.readObject();
-			//secureResponse = (SecureEnvelope)inputQueue.take();
 			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
 
 			// If server indicates success, return true
@@ -331,8 +304,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 			secureMessage = makeSecureEnvelope("LMEMBERS", list);
 			output.writeObject(secureMessage);
 
-			//secureResponse = (SecureEnvelope) input.readObject();
-			//secureResponse = (SecureEnvelope)inputQueue.take();
 			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
 
 			// If server indicates success, return true
@@ -359,8 +330,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 			secureMessage = makeSecureEnvelope("AUSERTOGROUP", list);
 			output.writeObject(secureMessage);
 
-			//secureResponse = (SecureEnvelope) input.readObject();
-			//secureResponse = (SecureEnvelope)inputQueue.take();
 			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
 
 			// If server indicates success, return true
@@ -387,8 +356,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 			secureMessage = makeSecureEnvelope("AOWNERTOGROUP", list);
 			output.writeObject(secureMessage);
 
-			//secureResponse = (SecureEnvelope) input.readObject();
-			//secureResponse = (SecureEnvelope)inputQueue.take();
 			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
 
 			// If server indicates success, return true
@@ -415,8 +382,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 			secureMessage = makeSecureEnvelope("RUSERFROMGROUP", list);
 			output.writeObject(secureMessage);
 
-			//secureResponse = (SecureEnvelope) input.readObject();
-			//secureResponse = (SecureEnvelope)inputQueue.take();
 			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
 
 			// If server indicates success, return true
@@ -440,7 +405,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 			list.add(token);
 			secureMessage = makeSecureEnvelope("NEWFILEKEY", list);
 			output.writeObject(secureMessage);
-
 
 			ArrayList<Object> tempList = (ArrayList<Object>)inputQueue.take();
 			return tempList;		
@@ -467,7 +431,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 				return (SecretKeySpec) tempList.get(2);
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;

@@ -10,11 +10,8 @@ import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.util.ArrayList;
-import java.util.Arrays;
-
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
-
 import cs1653.termproject.shared.SecureEnvelope;
 import cs1653.termproject.shared.SecurityUtils;
 
@@ -34,7 +31,7 @@ public abstract class ServerThread extends Thread {
 	protected boolean tamperedConnection;
 	// Flag to set if a token is replaced or tampered with
 	protected boolean tamperedToken;
-	
+
 	/**
 	 * Hash+Sign the bytes passed in using the specified PrivateKey.
 	 * @param text The byte[] to sign
@@ -44,9 +41,9 @@ public abstract class ServerThread extends Thread {
 	protected byte[] signBytes(byte[] text, PrivateKey privateKey) {
 		byte[] sigBytes = null;
 		Signature sig = null;
-		
+
 		System.out.println("Signing bytes...");
-		
+
 		try {
 			sig = Signature.getInstance("SHA512WithRSAEncryption", "BC");
 			sig.initSign(privateKey);
@@ -55,10 +52,10 @@ public abstract class ServerThread extends Thread {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return sigBytes;
 	}
-	
+
 	/**
 	 * Creates a SecureEnvelope with just a message in it. Serves as a wrapper for the more detailed method.
 	 * @param msg The msg for the SecureEnvelope
@@ -68,7 +65,7 @@ public abstract class ServerThread extends Thread {
 		ArrayList<Object> list = new ArrayList<Object>();
 		return makeSecureEnvelope(msg, list);
 	}
-	
+
 	/**
 	 * Creates a SecureEnvelope based on a msg and a list of Objects. The msg and a sequence number are added to the payload implicitly.
 	 * @param msg The msg of the SecureEnvelope
@@ -78,20 +75,20 @@ public abstract class ServerThread extends Thread {
 	protected SecureEnvelope makeSecureEnvelope(String msg, ArrayList<Object> list) {
 		// Make a new envelope
 		SecureEnvelope envelope = new SecureEnvelope();
-		
+
 		// Create new ivSpec
 		IvParameterSpec ivSpec = new IvParameterSpec(new byte[16]);
-		
+
 		// Set the ivSpec in the envelope
 		envelope.setIV(ivSpec.getIV());
-		
+
 		// Increment the sequenceNumber
 		sequenceNumber++;
-		
+
 		// Add the msg and sequenceNumber to the list
 		list.add(0, sequenceNumber);
 		list.add(0, msg);
-		
+
 		// Get the byte[] conversion of the payload list
 		byte[] payloadBytes = listToByteArray(list);
 		// Generate an HMAC for the message
@@ -100,10 +97,10 @@ public abstract class ServerThread extends Thread {
 		envelope.setHMAC(hmac);
 		// Set the payload to the encrypted byte[] of the list
 		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec, null));
-		
+
 		return envelope;
 	}
-	
+
 	/**
 	 * Method to encrypt a payload of a SecureEnvelope.
 	 * @param plainText Unencrypted byte[] plain text payload
@@ -115,7 +112,7 @@ public abstract class ServerThread extends Thread {
 	protected byte[] encryptPayload(byte[] plainText, boolean useSessionKey, IvParameterSpec ivSpec, PrivateKey privateKey) {
 		byte[] cipherText = null;
 		Cipher inCipher;
-		
+
 		if (useSessionKey) {
 			try {
 				inCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
@@ -135,10 +132,10 @@ public abstract class ServerThread extends Thread {
 				e.printStackTrace();
 			}
 		}
-		
+
 		return cipherText;
 	}
-	
+
 	/**
 	 * Decrypts the payload of the SecureEnvelope that was passed in and returns the plain text data.
 	 * @param envelope SecureEnvelope whose payload to decrypt
@@ -151,10 +148,10 @@ public abstract class ServerThread extends Thread {
 		if (envelope.getIV() != null) {
 			iv = new IvParameterSpec(envelope.getIV());
 		}
-		
+
 		return byteArrayToList(decryptPayload(envelope.getPayload(), iv, useSessionKey, privateKey));
 	}
-	
+
 	/**
 	 * Decrypts a payload of encrypted data into a plain text byte[].
 	 * @param cipherText The byte[] of encrypted data
@@ -166,7 +163,7 @@ public abstract class ServerThread extends Thread {
 	protected byte[] decryptPayload(byte[] cipherText, IvParameterSpec ivSpec, boolean useSessionKey, PrivateKey privateKey) {
 		Cipher outCipher = null;
 		byte[] plainText = null;
-		
+
 		if (useSessionKey) {
 			try {
 				outCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
@@ -185,10 +182,10 @@ public abstract class ServerThread extends Thread {
 				e.printStackTrace();
 			}
 		}
-		
+
 		return plainText;
 	}
-	
+
 	/**
 	 * Turns a list into a byte[] for encryption.
 	 * @param list The list to convert to a byte[]
@@ -196,22 +193,22 @@ public abstract class ServerThread extends Thread {
 	 */
 	protected byte[] listToByteArray(ArrayList<Object> list) {
 		byte[] returnBytes = null;
-		
+
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutputStream out = null;
 		try {
-		  out = new ObjectOutputStream(bos);   
-		  out.writeObject(list);
-		  returnBytes = bos.toByteArray();
-		  out.close();
-		  bos.close();
+			out = new ObjectOutputStream(bos);   
+			out.writeObject(list);
+			returnBytes = bos.toByteArray();
+			out.close();
+			bos.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return returnBytes;
 	}
-	
+
 	/**
 	 * Turns a byte[] back into an ArrayList<Object>.
 	 * @param byteArray The byte[] to convert to a ArrayList<Object>
@@ -219,20 +216,20 @@ public abstract class ServerThread extends Thread {
 	 */
 	protected ArrayList<Object> byteArrayToList(byte[] byteArray) {
 		ArrayList<Object> list = null;
-		
+
 		ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
 		ObjectInput in = null;
 		try {
-		  in = new ObjectInputStream(bis);
-		  Object object = in.readObject();
-		  list = (ArrayList<Object>)object;
-		  bis.close();
-		  in.close();
-		  
+			in = new ObjectInputStream(bis);
+			Object object = in.readObject();
+			list = (ArrayList<Object>)object;
+			bis.close();
+			in.close();
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return list;
 	}
 }

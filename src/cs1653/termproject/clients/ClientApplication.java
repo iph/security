@@ -1,13 +1,11 @@
 package cs1653.termproject.clients;
+
 import javax.swing.*;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.security.Security;
-
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class ClientApplication {
 

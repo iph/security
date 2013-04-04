@@ -1,8 +1,5 @@
 package cs1653.termproject.clients;
 
-import cs1653.termproject.shared.SecureEnvelope;
-import cs1653.termproject.shared.SecurityUtils;
-
 import java.net.Socket;
 import java.security.Key;
 import java.security.PublicKey;
@@ -13,11 +10,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
-
 import cs1653.termproject.shared.Envelope;
+import cs1653.termproject.shared.SecureEnvelope;
+import cs1653.termproject.shared.SecurityUtils;
 
 /**
  * Client is the base class for GroupClient and FileClient. It holds the encryption/decryption/envelope methods.
@@ -34,7 +31,6 @@ public abstract class Client {
 	protected Key sessionKey;
 	protected Key integrityKey;
 	protected PublicKey publicKey;
-	
 	protected int sequenceNumber;
 	protected boolean tamperedConnection;
 
@@ -48,21 +44,21 @@ public abstract class Client {
 		System.out.println("attempting to connect");
 
 		try{
-		    // Connect to the specified server
-		    sock = new Socket(server, port);
-		    
-		    // Set up I/O streams with the server
-		    output = new ObjectOutputStream(sock.getOutputStream());
-		    input = new ObjectInputStream(sock.getInputStream());
-		    return true;
+			// Connect to the specified server
+			sock = new Socket(server, port);
+
+			// Set up I/O streams with the server
+			output = new ObjectOutputStream(sock.getOutputStream());
+			input = new ObjectInputStream(sock.getInputStream());
+			return true;
 		}
 		catch(Exception e){
-		    System.err.println("Error: " + e.getMessage());
-		    e.printStackTrace(System.err);
-		    return false;
+			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace(System.err);
+			return false;
 		}
 	}
-	
+
 	/**
 	 * Connect to a server using previously initialized variables (due to constructor).
 	 * @return True if connected, successfully, otherwise false
@@ -70,7 +66,7 @@ public abstract class Client {
 	public boolean connect() {
 		return connect(myServer, myPort);
 	}
-	
+
 	/**
 	 * Constructor for the client instance.
 	 * @param server Address of the server to connect to later
@@ -113,7 +109,7 @@ public abstract class Client {
 			}
 		}
 	}
-	
+
 	/**
 	 * Perform a secure disconnection (encrypted messages) from the server.
 	 */
@@ -129,8 +125,8 @@ public abstract class Client {
 			}
 		}
 	}
-	
-	
+
+
 	/* ******************************
 	 * Crypto Related Methods
 	 ****************************** */
@@ -144,7 +140,7 @@ public abstract class Client {
 		ArrayList<Object> list = new ArrayList<Object>();
 		return makeSecureEnvelope(msg, list);
 	}
-	
+
 	/**
 	 * Creates a SecureEnvelope based on a msg and a list of Objects. The msg and a sequence number are added to the payload implicitly.
 	 * @param msg The msg of the SecureEnvelope
@@ -154,20 +150,20 @@ public abstract class Client {
 	protected SecureEnvelope makeSecureEnvelope(String msg, ArrayList<Object> list) {
 		// Make a new envelope
 		SecureEnvelope envelope = new SecureEnvelope();
-		
+
 		// Create new ivSpec
 		IvParameterSpec ivSpec = new IvParameterSpec(new byte[16]);
-		
+
 		// Set the ivSpec in the envelope
 		envelope.setIV(ivSpec.getIV());
-		
+
 		// Increment the sequenceNumber
 		sequenceNumber++;
-		
+
 		// Add the msg and sequenceNumber to the list
 		list.add(0, sequenceNumber);
 		list.add(0, msg);
-		
+
 		// Get the byte[] conversion of the payload list
 		byte[] payloadBytes = listToByteArray(list);
 		// Generate an HMAC for the message
@@ -176,10 +172,10 @@ public abstract class Client {
 		envelope.setHMAC(hmac);
 		// Set the payload to the encrypted byte[] of the list
 		envelope.setPayload(encryptPayload(payloadBytes, true, ivSpec));
-				
+
 		return envelope;
 	}
-	
+
 	/**
 	 * Method to encrypt a payload of a SecureEnvelope.
 	 * @param plainText Unencrypted byte[] plain text payload
@@ -190,7 +186,7 @@ public abstract class Client {
 	protected byte[] encryptPayload(byte[] plainText, boolean useSessionKey, IvParameterSpec ivSpec) {
 		byte[] cipherText = null;
 		Cipher inCipher;
-		
+
 		if (useSessionKey) {
 			try {
 				inCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
@@ -210,10 +206,10 @@ public abstract class Client {
 				e.printStackTrace();
 			}
 		}
-		
+
 		return cipherText;
 	}
-	
+
 	/**
 	 * Decrypts the payload of the SecureEnvelope that was passed in and returns the plain text data.
 	 * @param envelope SecureEnvelope whose payload to decrypt
@@ -222,7 +218,7 @@ public abstract class Client {
 	protected ArrayList<Object> getDecryptedPayload(SecureEnvelope envelope) {
 		return byteArrayToList(decryptPayload(envelope.getPayload(), new IvParameterSpec(envelope.getIV())));
 	}
-	
+
 	/**
 	 * Decrypts a payload of encrypted data into a plain text byte[].
 	 * @param cipherText The byte[] of encrypted data
@@ -232,7 +228,7 @@ public abstract class Client {
 	private byte[] decryptPayload(byte[] cipherText, IvParameterSpec ivSpec) {
 		Cipher outCipher = null;
 		byte[] plainText = null;
-		
+
 		try {
 			outCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
 			outCipher.init(Cipher.DECRYPT_MODE, sessionKey, ivSpec);
@@ -240,10 +236,10 @@ public abstract class Client {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return plainText;
 	}
-	
+
 	/**
 	 * Turns a list into a byte[] for encryption.
 	 * @param list The list to convert to a byte[]
@@ -251,22 +247,22 @@ public abstract class Client {
 	 */
 	protected byte[] listToByteArray(ArrayList<Object> list) {
 		byte[] returnBytes = null;
-		
+
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutputStream out = null;
 		try {
-		  out = new ObjectOutputStream(bos);   
-		  out.writeObject(list);
-		  returnBytes = bos.toByteArray();
-		  out.close();
-		  bos.close();
+			out = new ObjectOutputStream(bos);   
+			out.writeObject(list);
+			returnBytes = bos.toByteArray();
+			out.close();
+			bos.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return returnBytes;
 	}
-	
+
 	/**
 	 * Turns a byte[] back into an ArrayList<Object>.
 	 * @param byteArray The byte[] to convert to a ArrayList<Object>
@@ -274,21 +270,21 @@ public abstract class Client {
 	 */
 	private ArrayList<Object> byteArrayToList(byte[] byteArray) {
 		ArrayList<Object> list = null;
-		
+
 		ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
 		ObjectInput in = null;
 		try {
-		  in = new ObjectInputStream(bis);
-		  Object object = in.readObject();
-		  list = (ArrayList<Object>)object;
-		  bis.close();
-		  in.close();
-		  
+			in = new ObjectInputStream(bis);
+			Object object = in.readObject();
+			list = (ArrayList<Object>)object;
+			bis.close();
+			in.close();
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return list;
 	}
-	
+
 }

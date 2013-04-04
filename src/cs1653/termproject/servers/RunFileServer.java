@@ -1,8 +1,11 @@
 package cs1653.termproject.servers;
-/* Driver program for FileSharing File Server */
 
+/**
+ * Driver program for running the File Server.
+ * @author Sean and Matt
+ *
+ */
 public class RunFileServer {
-	
 	public static void main(String[] args) {
 		if (args.length > 0) {
 			try {
@@ -18,5 +21,4 @@ public class RunFileServer {
 			server.start();
 		}
 	}
-
 }
